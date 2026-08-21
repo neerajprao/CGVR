@@ -35,6 +35,7 @@ def translation_matrix(tx, ty):
 
 def rotation_matrix(angle_in_degrees):
     angle = math.radians(angle_in_degrees)
+
     cos_val = math.cos(angle)
     sin_val = math.sin(angle)
 
@@ -54,6 +55,7 @@ def scaling_matrix(sx, sy):
 
 
 def reflection_matrix(axis):
+
     if axis == "x":
         return scaling_matrix(1, -1)
 
@@ -85,6 +87,7 @@ def reflection_matrix(axis):
 # ==========================================
 
 def multiply_matrices(a, b):
+
     result = [
         [0, 0, 0],
         [0, 0, 0],
@@ -92,7 +95,9 @@ def multiply_matrices(a, b):
     ]
 
     for row in range(3):
+
         for col in range(3):
+
             total = 0
 
             for k in range(3):
@@ -108,6 +113,7 @@ def multiply_matrices(a, b):
 # ==========================================
 
 def about_point(matrix, px, py):
+
     shifted = multiply_matrices(
         translation_matrix(px, py),
         matrix
@@ -124,9 +130,11 @@ def about_point(matrix, px, py):
 # ==========================================
 
 def transform_points(matrix, points):
+
     transformed = []
 
     for x, y in points:
+
         new_x = (
             matrix[0][0] * x
             + matrix[0][1] * y
@@ -163,6 +171,7 @@ def transform_points(matrix, points):
 # ==========================================
 
 def clean(value):
+
     if abs(value) < 1e-9:
         return 0.0
 
@@ -170,7 +179,9 @@ def clean(value):
 
 
 def print_matrix(matrix):
+
     for row in matrix:
+
         print(
             "  ".join(
                 f"{clean(val):8.3f}"
@@ -183,9 +194,10 @@ def print_matrix(matrix):
 # Graph Boundary Calculation
 # ==========================================
 
-def get_graph_bounds(points):
-    x_vals = [x for x, y in points]
-    y_vals = [y for x, y in points]
+def get_graph_bounds(all_points):
+
+    x_vals = [x for x, y in all_points]
+    y_vals = [y for x, y in all_points]
 
     min_x = math.floor(min(x_vals))
     max_x = math.ceil(max(x_vals))
@@ -205,6 +217,7 @@ def get_graph_bounds(points):
 
 
 def choose_grid_step(min_val, max_val):
+
     graph_range = max_val - min_val
 
     if graph_range <= 20:
@@ -224,6 +237,7 @@ def choose_grid_step(min_val, max_val):
 # ==========================================
 
 def make_mapper(min_x, max_x, min_y, max_y):
+
     graph_w = WIDTH - 2 * MARGIN
     graph_h = HEIGHT - 2 * MARGIN
 
@@ -255,6 +269,7 @@ def make_mapper(min_x, max_x, min_y, max_y):
 # ==========================================
 
 def draw_grid(min_x, max_x, min_y, max_y, screen_x, screen_y):
+
     x_step = choose_grid_step(min_x, max_x)
     y_step = choose_grid_step(min_y, max_y)
 
@@ -265,12 +280,14 @@ def draw_grid(min_x, max_x, min_y, max_y, screen_x, screen_y):
     glBegin(GL_LINES)
 
     for x in range(min_x, max_x + 1, x_step):
+
         sx = screen_x(x)
 
         glVertex2f(sx, screen_y(min_y))
         glVertex2f(sx, screen_y(max_y))
 
     for y in range(min_y, max_y + 1, y_step):
+
         sy = screen_y(y)
 
         glVertex2f(screen_x(min_x), sy)
@@ -296,19 +313,22 @@ def draw_grid(min_x, max_x, min_y, max_y, screen_x, screen_y):
     glBegin(GL_LINES)
 
     if min_y <= 0 <= max_y:
+
         glVertex2f(screen_x(min_x), screen_y(0))
         glVertex2f(screen_x(max_x), screen_y(0))
 
     if min_x <= 0 <= max_x:
+
         glVertex2f(screen_x(0), screen_y(min_y))
         glVertex2f(screen_x(0), screen_y(max_y))
 
     glEnd()
 
 
-def draw_shape(points, screen_x, screen_y, color, dashed):
+def draw_shape(points, screen_x, screen_y, color, dashed=False):
+
     glColor3f(*color)
-    glLineWidth(2.0)
+    glLineWidth(2.5)
 
     if dashed:
         glEnable(GL_LINE_STIPPLE)
@@ -322,6 +342,7 @@ def draw_shape(points, screen_x, screen_y, color, dashed):
     glBegin(mode)
 
     for x, y in points:
+
         glVertex2f(
             screen_x(x),
             screen_y(y)
@@ -333,12 +354,14 @@ def draw_shape(points, screen_x, screen_y, color, dashed):
 
 
 def plot_points(points, screen_x, screen_y, color):
+
     glColor3f(*color)
     glPointSize(8.0)
 
     glBegin(GL_POINTS)
 
     for x, y in points:
+
         glVertex2f(
             screen_x(x),
             screen_y(y)
@@ -352,6 +375,7 @@ def plot_points(points, screen_x, screen_y, color):
 # ==========================================
 
 def read_shape():
+
     count = int(input("Number of vertices: "))
 
     if count < 2:
@@ -362,6 +386,7 @@ def read_shape():
     points = []
 
     for i in range(count):
+
         x = float(input(f"x{i + 1}: "))
         y = float(input(f"y{i + 1}: "))
 
@@ -371,6 +396,7 @@ def read_shape():
 
 
 def read_reflection():
+
     print("\nReflect about")
     print("1. X axis")
     print("2. Y axis")
@@ -414,6 +440,7 @@ def read_reflection():
 # ==========================================
 
 def read_transformation():
+
     print("\nChoose a transformation")
     print("1. Translation")
     print("2. Rotation")
@@ -424,6 +451,7 @@ def read_transformation():
 
     # Translation
     if choice == "1":
+
         tx = float(input("tx: "))
         ty = float(input("ty: "))
 
@@ -434,6 +462,7 @@ def read_transformation():
 
     # Rotation
     if choice == "2":
+
         angle = float(
             input("Angle in degrees (anticlockwise): ")
         )
@@ -452,6 +481,7 @@ def read_transformation():
 
     # Scaling
     if choice == "3":
+
         sx = float(input("sx: "))
         sy = float(input("sy: "))
 
@@ -477,11 +507,11 @@ def read_transformation():
 
 
 # ==========================================
-# Read Multiple Transformations and
-# Create Composite Transformation Matrix
+# Read Multiple Transformations
 # ==========================================
 
 def read_composite_transformation():
+
     count = int(
         input(
             "\nNumber of transformations to apply: "
@@ -493,20 +523,25 @@ def read_composite_transformation():
             "At least one transformation is required"
         )
 
-    # Start with identity matrix
+    # Final composite matrix
     composite_matrix = identity_matrix()
 
+    # Store each individual transformation matrix
+    transformation_matrices = []
+
+    # Store transformation names
     transformation_names = []
 
     for i in range(count):
+
         print(f"\n--- Transformation {i + 1} ---")
 
         matrix, name = read_transformation()
 
+        transformation_matrices.append(matrix)
         transformation_names.append(name)
 
-        # Multiply each new transformation
-        # with the existing composite matrix
+        # Build composite matrix
         composite_matrix = multiply_matrices(
             matrix,
             composite_matrix
@@ -514,6 +549,7 @@ def read_composite_transformation():
 
     return (
         composite_matrix,
+        transformation_matrices,
         transformation_names
     )
 
@@ -523,9 +559,10 @@ def read_composite_transformation():
 # ==========================================
 
 def main():
+
     print("==========================================")
-    print("COMPOSITE 2D TRANSFORMATIONS")
-    print("USING HOMOGENEOUS COORDINATES")
+    print("COMPOSITE TRANSFORMATIONS")
+    print("USING MATRIX REPRESENTATION")
     print("==========================================")
 
     # Read original shape
@@ -533,18 +570,39 @@ def main():
 
     original = read_shape()
 
-    # Read multiple transformations
-    composite_matrix, transformation_names = (
-        read_composite_transformation()
-    )
-
-    # Apply final composite transformation
-    transformed = transform_points(
+    # Read transformations
+    (
         composite_matrix,
-        original
-    )
+        transformation_matrices,
+        transformation_names
+    ) = read_composite_transformation()
 
-    # Display transformation sequence
+    # ==========================================
+    # Store Every Intermediate Transformation
+    # ==========================================
+
+    # Stage 0 = Original shape
+    transformation_stages = [original]
+
+    current_points = original
+
+    # Apply transformations one by one
+    for matrix in transformation_matrices:
+
+        current_points = transform_points(
+            matrix,
+            current_points
+        )
+
+        transformation_stages.append(current_points)
+
+    # Final transformed shape
+    transformed = transformation_stages[-1]
+
+    # ==========================================
+    # Display Transformation Sequence
+    # ==========================================
+
     print("\n==========================================")
     print("TRANSFORMATION SEQUENCE")
     print("==========================================")
@@ -555,27 +613,57 @@ def main():
     ):
         print(f"{i}. {name}")
 
-    # Display final composite matrix
-    print("\nComposite Homogeneous Transformation Matrix:")
+    # ==========================================
+    # Display Intermediate Coordinates
+    # ==========================================
+
+    print("\n==========================================")
+    print("INTERMEDIATE TRANSFORMATION RESULTS")
+    print("==========================================")
+
+    print("\nStage 0: Original Shape")
+
+    for i, (x, y) in enumerate(original, start=1):
+        print(f"P{i}: ({x:g}, {y:g})")
+
+    for stage_number in range(
+        1,
+        len(transformation_stages)
+    ):
+
+        print(
+            f"\nStage {stage_number}: "
+            f"After {transformation_names[stage_number - 1]}"
+        )
+
+        for i, (x, y) in enumerate(
+            transformation_stages[stage_number],
+            start=1
+        ):
+            print(f"P{i}: ({x:g}, {y:g})")
+
+    # ==========================================
+    # Display Final Composite Matrix
+    # ==========================================
+
+    print("\n==========================================")
+    print("FINAL COMPOSITE TRANSFORMATION MATRIX")
+    print("==========================================")
+
     print_matrix(composite_matrix)
 
-    # Display transformed points
-    print("\nOriginal -> Final Transformed:")
+    # ==========================================
+    # Calculate Graph Bounds
+    # Include Every Intermediate Shape
+    # ==========================================
 
-    for (x, y), (new_x, new_y) in zip(
-        original,
-        transformed
-    ):
-        print(
-            f"({x:g}, {y:g}) -> "
-            f"({new_x:g}, {new_y:g})"
-        )
+    all_points = []
 
-    # Calculate graph boundaries
+    for stage in transformation_stages:
+        all_points.extend(stage)
+
     min_x, max_x, min_y, max_y = (
-        get_graph_bounds(
-            original + transformed
-        )
+        get_graph_bounds(all_points)
     )
 
     # Create coordinate mapper
@@ -586,8 +674,12 @@ def main():
         max_y
     )
 
+    # ==========================================
     # Initialize GLFW
+    # ==========================================
+
     if not glfw.init():
+
         sys.exit(
             "Failed to initialize GLFW"
         )
@@ -601,6 +693,7 @@ def main():
     )
 
     if not window:
+
         glfw.terminate()
 
         sys.exit(
@@ -609,7 +702,10 @@ def main():
 
     glfw.make_context_current(window)
 
-    # Configure OpenGL projection
+    # ==========================================
+    # Configure OpenGL Projection
+    # ==========================================
+
     glViewport(0, 0, WIDTH, HEIGHT)
 
     glMatrixMode(GL_PROJECTION)
@@ -627,7 +723,7 @@ def main():
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
-    # Set white background
+    # White background
     glClearColor(
         1.0,
         1.0,
@@ -636,10 +732,26 @@ def main():
     )
 
     # ==========================================
+    # Colors for Each Transformation Stage
+    # ==========================================
+
+    stage_colors = [
+        (0.0, 0.0, 1.0),   # Blue - Original
+        (0.0, 0.6, 0.0),   # Green - Stage 1
+        (1.0, 0.5, 0.0),   # Orange - Stage 2
+        (0.6, 0.0, 0.8),   # Purple - Stage 3
+        (0.0, 0.7, 0.7),   # Cyan - Stage 4
+        (0.8, 0.2, 0.5),   # Pink - Stage 5
+        (0.5, 0.5, 0.0),   # Olive - Stage 6
+        (1.0, 0.0, 0.0),   # Red - Additional stages
+    ]
+
+    # ==========================================
     # OpenGL Render Loop
     # ==========================================
 
     while not glfw.window_should_close(window):
+
         glClear(GL_COLOR_BUFFER_BIT)
 
         # Draw coordinate grid
@@ -652,39 +764,35 @@ def main():
             screen_y
         )
 
-        # Draw original shape in blue dashed lines
-        draw_shape(
-            original,
-            screen_x,
-            screen_y,
-            (0.0, 0.0, 1.0),
-            True
-        )
+        # ==========================================
+        # Draw Every Transformation Stage
+        # ==========================================
 
-        # Draw transformed shape in red solid lines
-        draw_shape(
-            transformed,
-            screen_x,
-            screen_y,
-            (1.0, 0.0, 0.0),
-            False
-        )
+        for stage_number, stage_points in enumerate(
+            transformation_stages
+        ):
 
-        # Plot original vertices
-        plot_points(
-            original,
-            screen_x,
-            screen_y,
-            (0.0, 0.0, 1.0)
-        )
+            color = stage_colors[
+                stage_number % len(stage_colors)
+            ]
 
-        # Plot transformed vertices
-        plot_points(
-            transformed,
-            screen_x,
-            screen_y,
-            (1.0, 0.0, 0.0)
-        )
+            # Original shape is dashed
+            dashed = (stage_number == 0)
+
+            draw_shape(
+                stage_points,
+                screen_x,
+                screen_y,
+                color,
+                dashed
+            )
+
+            plot_points(
+                stage_points,
+                screen_x,
+                screen_y,
+                color
+            )
 
         glfw.swap_buffers(window)
         glfw.poll_events()
