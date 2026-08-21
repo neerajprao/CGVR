@@ -34,6 +34,43 @@ The Midpoint Circle Drawing Algorithm uses a decision parameter to determine the
 
 ---
 
+### 3. 2D Transformations Using Homogeneous Coordinates
+
+**Description:**
+Lab 3 demonstrates 2D geometric transformations using **3x3 homogeneous transformation matrices**. The program supports translation, rotation, scaling, and reflection. It displays the original shape with a dashed blue outline and the transformed shape with a solid red outline.
+
+The sample shape uses three vertices:
+
+* `(-1, 0)`
+* `(1, 0)`
+* `(0, 2)`
+
+The number of vertices, vertex coordinates, transformation type, transformation values, rotation pivot, scaling fixed point, and reflection axis are all customizable through the program prompts.
+
+**Implementation:**
+
+[`Lab3/main.py`](Lab3/main.py)
+
+**Outputs:**
+
+#### Translation
+
+![Translation](Lab3/Output/Translation.png)
+
+#### Rotation
+
+![Rotation](Lab3/Output/Rotation.png)
+
+#### Scaling
+
+![Scaling](Lab3/Output/Scalling.png)
+
+#### Reflection
+
+![Reflection](Lab3/Output/Reflection.png)
+
+---
+
 ## Technologies Used
 
 * Python
