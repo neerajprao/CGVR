@@ -82,7 +82,7 @@ Lab 4 extends Lab 3 by chaining multiple 2D transformations (translation, rotati
 
 **Output:**
 
-<video src="Lab4/Output/Lab4_Demo.mp4" controls width="600"></video>
+<video src="https://raw.githubusercontent.com/neerajprao/CGVR/main/Lab4/Output/Lab4_Demo.mp4" controls width="600"></video>
 
 > If the video above does not render, watch/download it directly: [`Lab4/Output/Lab4_Demo.mp4`](Lab4/Output/Lab4_Demo.mp4)
 
