@@ -1,0 +1,2461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two-Dimensional Transformations — Computer Graphics Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   Palette: blueprint navy chrome, cool paper, blue = original,
+   rose = transformed, teal = correct, amber = teacher note.
+   ============================================================ */
+:root{
+  --paper:#EDF1F8;
+  --surface:#FFFFFF;
+  --surface-2:#F7F9FC;
+  --ink:#0C1524;
+  --muted:#5A6B85;
+  --line:#DBE3EE;
+
+  --navy:#0F1B2E;
+  --navy-2:#17263D;
+  --navy-3:#243652;
+
+  --blue:#2457E6;
+  --blue-soft:rgba(36,87,230,.10);
+  --rose:#D6215F;
+  --rose-soft:rgba(214,33,95,.12);
+  --teal:#0E8F84;
+  --teal-soft:rgba(14,143,132,.10);
+  --amber:#B0660A;
+  --amber-soft:rgba(176,102,10,.10);
+
+  --grid-minor:#DEE6F1;
+  --grid-major:#C6D2E4;
+  --axis:#43536E;
+
+  --display:'Space Grotesk','Segoe UI',system-ui,sans-serif;
+  --body:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+  --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+
+  --r:14px;
+  --r-sm:9px;
+  --shadow:0 1px 2px rgba(16,32,60,.06), 0 10px 26px -16px rgba(16,32,60,.35);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--body);font-size:15.5px;line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--display);line-height:1.2;margin:0;letter-spacing:-.015em}
+p{margin:0 0 12px}
+p:last-child{margin-bottom:0}
+a{color:var(--blue)}
+:focus-visible{outline:2.5px solid var(--rose);outline-offset:2px;border-radius:4px}
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+.app{display:grid;grid-template-columns:266px minmax(0,1fr);min-height:100vh}
+
+.sidebar{
+  background:var(--navy);color:#E6EDF8;position:sticky;top:0;height:100vh;
+  overflow-y:auto;display:flex;flex-direction:column;
+  border-right:1px solid #0A1322;
+}
+.brand{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.09)}
+.brand .mark{
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:#8FA6C6;display:block;margin-bottom:8px;
+}
+.brand h2{font-size:18px;color:#fff;letter-spacing:-.02em}
+.brand .badge{
+  display:inline-block;margin-top:10px;padding:4px 9px;border-radius:100px;
+  background:rgba(214,33,95,.18);color:#FF9CBC;border:1px solid rgba(214,33,95,.4);
+  font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+}
+.nav{padding:12px 10px;flex:1}
+.nav button{
+  display:flex;gap:11px;align-items:center;width:100%;text-align:left;
+  background:none;border:0;color:#B9C8DE;font-family:var(--body);font-size:14px;
+  padding:9px 11px;border-radius:var(--r-sm);cursor:pointer;position:relative;
+  border-left:3px solid transparent;transition:background .16s,color .16s;
+}
+.nav button:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav button .n{font-family:var(--mono);font-size:11px;color:#69809f;min-width:16px}
+.nav button.active{background:rgba(255,255,255,.09);color:#fff;border-left-color:var(--rose)}
+.nav button.active .n{color:#FF9CBC}
+.nav button.done .n::after{content:"•";color:var(--teal);margin-left:2px}
+.progress-box{padding:16px 20px 20px;border-top:1px solid rgba(255,255,255,.09)}
+.progress-box .lab{
+  display:flex;justify-content:space-between;font-family:var(--mono);
+  font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8FA6C6;margin-bottom:8px;
+}
+.bar{height:6px;border-radius:100px;background:rgba(255,255,255,.13);overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--rose));transition:width .4s ease}
+
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{
+  background:var(--surface);border-bottom:1px solid var(--line);
+  padding:18px 30px;display:flex;gap:18px;align-items:flex-start;
+  justify-content:space-between;flex-wrap:wrap;position:sticky;top:0;z-index:20;
+}
+.topbar h1{font-size:26px}
+.topbar .sub{color:var(--muted);font-size:13.5px;margin:5px 0 0;font-family:var(--mono);letter-spacing:.01em}
+.topbar-actions{display:flex;gap:9px;flex-wrap:wrap}
+
+/* ============================================================
+   BUTTONS & CONTROLS
+   ============================================================ */
+.btn{
+  font-family:var(--body);font-size:13.5px;font-weight:500;cursor:pointer;
+  padding:8px 14px;border-radius:100px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink);transition:.15s;
+}
+.btn:hover{border-color:#B9C6DA;background:var(--surface-2)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{background:#1D48C4}
+.btn.rose{background:var(--rose);border-color:var(--rose);color:#fff}
+.btn.rose:hover{background:#B71850}
+.btn.ghost{background:transparent}
+.btn.on{background:var(--amber);border-color:var(--amber);color:#fff}
+.btn.on.present-on{background:var(--navy);border-color:var(--navy)}
+.btn.sm{padding:5px 11px;font-size:12.5px}
+.chip{
+  font-family:var(--mono);font-size:12px;padding:5px 11px;border-radius:100px;
+  border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--muted);transition:.15s;
+}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.chip.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.chip-row{display:flex;gap:7px;flex-wrap:wrap}
+
+.ctrl{margin-bottom:15px}
+.ctrl label{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-size:13px;font-weight:500;margin-bottom:5px;color:var(--muted);
+}
+.ctrl label b{font-family:var(--mono);font-weight:600;color:var(--ink);font-size:13.5px}
+.ctrl output{
+  font-family:var(--mono);font-size:13px;font-weight:600;color:var(--rose);
+  background:var(--rose-soft);padding:1px 8px;border-radius:100px;min-width:44px;text-align:center;
+}
+input[type=range]{
+  width:100%;-webkit-appearance:none;appearance:none;background:transparent;margin:0;height:22px;cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:100px;background:var(--line)}
+input[type=range]::-moz-range-track{height:5px;border-radius:100px;background:var(--line)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--surface);
+  border:3px solid var(--rose);margin-top:-6px;box-shadow:0 1px 4px rgba(0,0,0,.2);
+}
+input[type=range]::-moz-range-thumb{
+  width:12px;height:12px;border-radius:50%;background:var(--surface);border:3px solid var(--rose);
+}
+input[type=number],select,input[type=text]{
+  font-family:var(--mono);font-size:13.5px;padding:7px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%;
+}
+input[type=number]:focus,select:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px var(--blue-soft)}
+
+/* ============================================================
+   SECTIONS & BLOCKS
+   ============================================================ */
+.sections{padding:26px 30px 60px;max-width:1180px;width:100%}
+.section{display:none;animation:rise .3s ease}
+.section.active{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.block{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:22px 24px;box-shadow:var(--shadow);
+}
+.block + .block{margin-top:18px}
+.block > h3{font-size:19px;margin-bottom:10px}
+.eyebrow{
+  display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;
+}
+.eyebrow .step{
+  background:var(--navy);color:#fff;border-radius:6px;padding:2px 7px;font-size:10.5px;letter-spacing:.06em;
+}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+.lede{font-size:17px;line-height:1.55;color:var(--ink);font-family:var(--display);font-weight:500}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.quote{
+  border-left:3px solid var(--blue);padding:2px 0 2px 14px;margin:12px 0;
+  font-family:var(--display);font-size:16.5px;font-weight:500;line-height:1.45;
+}
+.deep{
+  margin-top:12px;border:1px dashed var(--line);border-radius:var(--r-sm);
+  padding:10px 14px;background:var(--surface-2);font-size:13.5px;color:var(--muted);
+}
+.deep b{color:var(--ink)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+
+/* Lab = graph + controls */
+.lab{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,290px);gap:22px;align-items:start}
+.panel{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:16px}
+.panel h4{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.panel + .panel{margin-top:14px}
+
+/* ============================================================
+   GRAPH / SVG
+   ============================================================ */
+.graph{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);
+  overflow:hidden;position:relative;
+}
+.gsvg{display:block;width:100%;height:auto;touch-action:manipulation}
+.g-grid line{stroke:var(--grid-minor);stroke-width:1}
+.g-grid line.major{stroke:var(--grid-major)}
+.g-axes line{stroke:var(--axis);stroke-width:1.5}
+.tick{font-family:var(--mono);font-size:10.5px;fill:#7A8AA4}
+.axname{font-family:var(--display);font-size:13px;font-weight:600;fill:var(--axis)}
+.sh-ghost{fill:var(--blue-soft);stroke:var(--blue);stroke-width:2;stroke-dasharray:7 5;stroke-linejoin:round}
+.sh-after{fill:var(--rose-soft);stroke:var(--rose);stroke-width:2.5;stroke-linejoin:round}
+.sh-mid{fill:none;stroke:#9AA9C2;stroke-width:1.6;stroke-dasharray:3 4;stroke-linejoin:round}
+.dot-ghost{fill:var(--blue)}
+.dot-after{fill:var(--rose)}
+.dot-mark{fill:var(--navy)}
+.vlabel{
+  font-family:var(--mono);font-size:11px;font-weight:600;
+  paint-order:stroke;stroke:#fff;stroke-width:3.5px;stroke-linejoin:round;
+}
+.vlabel.g{fill:var(--blue)}
+.vlabel.a{fill:var(--rose)}
+.vlabel.h{fill:var(--amber)}
+.vlabel.t{fill:var(--teal)}
+.helper{stroke:var(--amber);stroke-width:1.7}
+.helper-dash{stroke:var(--amber);stroke-width:1.4;stroke-dasharray:4 4;fill:none}
+.mirror{stroke:var(--teal);stroke-width:2.4;stroke-dasharray:9 5}
+.arcline{fill:none;stroke:var(--amber);stroke-width:1.8}
+.legend{
+  display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);
+  padding:10px 12px 0;font-family:var(--mono);
+}
+.legend i{display:inline-block;width:20px;height:0;border-top-width:2.5px;margin-right:6px;vertical-align:middle}
+.legend i.g{border-top-style:dashed;border-top-color:var(--blue)}
+.legend i.a{border-top-style:solid;border-top-color:var(--rose)}
+
+/* ============================================================
+   MATRICES & EQUATIONS  (pure CSS — no MathJax needed)
+   ============================================================ */
+.matrix{
+  display:inline-grid;grid-template-columns:repeat(var(--cols,3),minmax(40px,auto));
+  gap:4px 10px;padding:9px 15px;position:relative;vertical-align:middle;margin:2px 4px;
+}
+.matrix::before,.matrix::after{
+  content:"";position:absolute;top:0;bottom:0;width:7px;border:2px solid var(--navy-3);
+}
+.matrix::before{left:0;border-right:0;border-radius:3px 0 0 3px}
+.matrix::after{right:0;border-left:0;border-radius:0 3px 3px 0}
+.mcell{
+  font-family:var(--mono);font-size:14px;text-align:center;padding:2px 4px;border-radius:5px;
+  transition:background .2s,color .2s;
+}
+.mcell.hi{background:var(--rose);color:#fff}
+.mcell.hi2{background:var(--blue);color:#fff}
+.mcell.dim{color:#9AA9C2}
+.matrix.sm .mcell{font-size:12.5px}
+.matrix.sm{padding:7px 12px;gap:3px 8px}
+.eqrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:15px;margin:8px 0}
+.eqrow .op{font-size:17px;color:var(--muted)}
+.eq{
+  font-family:var(--mono);font-size:14.5px;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:var(--r-sm);padding:10px 14px;margin:8px 0;line-height:1.9;
+}
+.eq b{color:var(--rose);font-weight:600}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface-2);padding:1px 5px;border-radius:4px;border:1px solid var(--line)}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:100px}
+.tag.b{background:var(--blue-soft);color:var(--blue)}
+.tag.r{background:var(--rose-soft);color:var(--rose)}
+
+/* Before / after strip */
+.ba{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:12px;align-items:center;margin-top:6px}
+.ba .cell{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;text-align:center}
+.ba .cell .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+.ba .cell .v{font-family:var(--mono);font-size:17px;font-weight:600}
+.ba .cell.before .v{color:var(--blue)}
+.ba .cell.after .v{color:var(--rose)}
+.ba .arw{font-size:20px;color:#9AA9C2}
+@media(max-width:700px){.ba{grid-template-columns:1fr;}.ba .arw{transform:rotate(90deg);justify-self:center}}
+
+/* Data tables */
+table.data{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+table.data th,table.data td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
+table.data th{
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);font-weight:500;
+}
+table.data td{font-family:var(--mono)}
+table.data td.b{color:var(--blue)}
+table.data td.a{color:var(--rose);font-weight:600}
+.scrollx{overflow-x:auto}
+
+/* Callouts */
+.note{border-radius:var(--r-sm);padding:12px 15px;font-size:14px;margin-top:14px;border:1px solid}
+.note .h{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;display:block;margin-bottom:5px}
+.note.app{background:var(--teal-soft);border-color:rgba(14,143,132,.28)}
+.note.app .h{color:var(--teal)}
+.note.tip{background:var(--blue-soft);border-color:rgba(36,87,230,.22)}
+.note.tip .h{color:var(--blue)}
+.teach{
+  background:var(--amber-soft);border:1px solid rgba(176,102,10,.3);border-radius:var(--r-sm);
+  padding:12px 15px;font-size:14px;margin-top:14px;display:none;
+}
+body.teacher-on .teach{display:block}
+.teach .h{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--amber);display:block;margin-bottom:5px}
+.teach .ans{color:var(--amber);font-weight:600}
+
+/* Overview cards */
+.tcard{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;
+  cursor:pointer;text-align:left;font-family:var(--body);transition:.18s;position:relative;overflow:hidden;
+}
+.tcard::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--blue);opacity:.85}
+.tcard:hover{transform:translateY(-3px);box-shadow:0 12px 28px -18px rgba(16,32,60,.6);border-color:#C3D0E2}
+.tcard h4{font-size:16px;margin-bottom:6px}
+.tcard p{font-size:13.5px;color:var(--muted);margin:0}
+.tcard .go{font-family:var(--mono);font-size:11.5px;color:var(--blue);margin-top:10px;display:block}
+.tcard .ico{font-size:22px;line-height:1;margin-bottom:10px;display:block}
+.tcard[data-c=rose]::before{background:var(--rose)} .tcard[data-c=rose] .go{color:var(--rose)}
+.tcard[data-c=teal]::before{background:var(--teal)} .tcard[data-c=teal] .go{color:var(--teal)}
+.tcard[data-c=amber]::before{background:var(--amber)} .tcard[data-c=amber] .go{color:var(--amber)}
+.tcard[data-c=navy]::before{background:var(--navy)} .tcard[data-c=navy] .go{color:var(--navy)}
+
+/* Concept map */
+.map{text-align:center;padding:6px 0 2px}
+.map .root{
+  display:inline-block;background:var(--navy);color:#fff;font-family:var(--display);font-weight:600;
+  padding:10px 22px;border-radius:100px;font-size:15px;
+}
+.map .stem{width:2px;height:22px;background:var(--grid-major);margin:0 auto}
+.map .rail{height:2px;background:var(--grid-major);margin:0 24px}
+.map .legs{display:flex;justify-content:space-around;margin:0 24px}
+.map .legs span{width:2px;height:18px;background:var(--grid-major)}
+.map .row{display:flex;justify-content:space-around;gap:8px;flex-wrap:nowrap}
+.map .node{
+  flex:1;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:9px 6px;font-family:var(--display);font-weight:600;font-size:13.5px;cursor:pointer;transition:.15s;
+}
+.map .node small{display:block;font-family:var(--mono);font-weight:400;font-size:11px;color:var(--muted);margin-top:2px}
+.map .node:hover{border-color:var(--rose);color:var(--rose);background:var(--rose-soft)}
+@media(max-width:640px){.map .row{flex-wrap:wrap}.map .legs,.map .rail{display:none}.map .node{flex:1 1 45%}}
+
+/* Quiz */
+.q{border:1px solid var(--line);border-radius:var(--r);padding:18px;background:var(--surface)}
+.q + .q{margin-top:14px}
+.q .qh{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.q .qt{font-weight:600;font-size:15.5px;margin-bottom:12px;font-family:var(--display)}
+.opt{
+  display:block;width:100%;text-align:left;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:var(--r-sm);padding:10px 13px;margin-bottom:8px;cursor:pointer;font-family:var(--body);
+  font-size:14px;transition:.14s;color:var(--ink);
+}
+.opt:hover:not(:disabled){border-color:var(--blue);background:var(--blue-soft)}
+.opt .k{font-family:var(--mono);color:var(--muted);margin-right:9px;font-weight:600}
+.opt:disabled{cursor:default;opacity:.95}
+.opt.right{background:var(--teal-soft);border-color:var(--teal);color:var(--teal);font-weight:600}
+.opt.right .k{color:var(--teal)}
+.opt.wrong{background:var(--rose-soft);border-color:var(--rose);color:var(--rose)}
+.opt.wrong .k{color:var(--rose)}
+.why{margin-top:6px;font-size:13.5px;background:var(--surface-2);border-left:3px solid var(--blue);padding:9px 13px;border-radius:0 var(--r-sm) var(--r-sm) 0;display:none}
+.why.show{display:block}
+.score{
+  position:sticky;top:96px;z-index:5;background:var(--navy);color:#fff;border-radius:var(--r);
+  padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.score .n{font-family:var(--mono);font-size:26px;font-weight:600}
+.score .verdict{font-family:var(--display);font-weight:600}
+
+/* Challenge */
+.chal{background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:var(--r-sm);padding:16px}
+.chal .p{font-family:var(--display);font-weight:600;font-size:15px;margin-bottom:10px}
+.chal .fields{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.chal .f{display:flex;flex-direction:column;gap:4px}
+.chal .f span{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.chal .f input{width:92px}
+.fb{margin-top:10px;font-size:13.5px;font-weight:500;display:none}
+.fb.show{display:block}
+.fb.ok{color:var(--teal)}
+.fb.no{color:var(--rose)}
+
+/* Mistakes */
+.mis{border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
+.mis .top{background:var(--rose-soft);padding:10px 14px;font-weight:600;font-size:14px;color:var(--rose);font-family:var(--display)}
+.mis .body{padding:12px 14px;font-size:13.8px}
+.mis .body .w{color:var(--rose)}
+.mis .body .r{color:var(--teal);margin-top:6px}
+.mis .body b{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+
+/* Section footer nav */
+.secnav{display:flex;justify-content:space-between;gap:12px;margin-top:20px;flex-wrap:wrap}
+
+/* Step-by-step reveal */
+.calcrow{
+  font-family:var(--mono);font-size:14.5px;padding:10px 14px;border-radius:var(--r-sm);
+  background:var(--surface-2);border:1px solid var(--line);margin-bottom:8px;
+  opacity:0;transform:translateX(-10px);transition:.35s;
+}
+.calcrow.in{opacity:1;transform:none}
+.calcrow.final{background:var(--rose-soft);border-color:var(--rose);color:var(--rose);font-weight:600}
+
+/* Cheat sheet */
+.cheat{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px}
+.cheat .c{border:1px solid var(--line);border-radius:var(--r-sm);padding:14px;text-align:center;background:var(--surface)}
+.cheat .c h4{font-size:14.5px;margin-bottom:2px}
+.cheat .c .eff{font-family:var(--mono);font-size:11.5px;color:var(--rose);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+
+/* Memory trick */
+.mem{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.mem .m{background:var(--navy);color:#fff;border-radius:var(--r-sm);padding:16px;text-align:center}
+.mem .m .ico{font-size:26px;display:block;margin-bottom:6px}
+.mem .m .k{font-family:var(--display);font-size:16px;font-weight:600}
+.mem .m .v{font-family:var(--mono);font-size:12px;color:#8FA6C6;margin-top:3px}
+
+#hc-bigm .mcell,.map .root[data-go]{cursor:pointer}
+#hc-bigm .mcell:hover{background:var(--blue-soft)}
+.map .root[data-go]:hover{filter:brightness(1.15)}
+.f{display:flex;flex-direction:column;gap:4px}
+.f span{font-family:var(--mono);font-size:12px;color:var(--muted)}
+body.present .deep{display:none}
+
+/* ============================================================
+   PRESENTATION MODE
+   ============================================================ */
+body.present .sidebar{display:none}
+body.present{font-size:18px}
+body.present .app{grid-template-columns:1fr}
+body.present .sections{padding:24px 40px 110px;max-width:1400px;margin:0 auto}
+body.present .topbar h1{font-size:32px}
+body.present .p-hide{display:none!important}
+body.present .lab{grid-template-columns:minmax(0,1.6fr) minmax(0,320px)}
+body.present .lede{font-size:22px}
+body.present .mcell{font-size:17px}
+body.present .block{padding:26px 30px}
+#presentBar{
+  display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;
+  background:var(--navy);color:#fff;border-radius:100px;padding:8px 10px;gap:10px;align-items:center;
+  box-shadow:0 12px 30px -10px rgba(0,0,0,.5);
+}
+body.present #presentBar{display:flex}
+#presentBar .t{font-family:var(--display);font-weight:600;font-size:15px;padding:0 10px;white-space:nowrap}
+#presentBar .btn{background:rgba(255,255,255,.12);border-color:transparent;color:#fff}
+#presentBar .btn:hover{background:rgba(255,255,255,.24)}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media(max-width:1080px){.lab{grid-template-columns:1fr}}
+@media(max-width:900px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;flex-direction:column}
+  .brand{padding:14px 16px 10px}
+  .nav{display:flex;overflow-x:auto;gap:6px;padding:10px;scrollbar-width:thin}
+  .nav button{width:auto;white-space:nowrap;border-left:0;border-bottom:3px solid transparent;border-radius:100px;padding:7px 13px}
+  .nav button.active{border-left:0;border-bottom-color:var(--rose)}
+  .progress-box{padding:10px 16px 14px}
+  .topbar{padding:14px 18px;position:static}
+  .topbar h1{font-size:21px}
+  .sections{padding:18px 16px 50px}
+  .block{padding:18px 16px}
+  body.present .sections{padding:18px 16px 100px}
+}
+@media(max-width:520px){
+  body{font-size:15px}
+  .ba{grid-template-columns:1fr}
+  .topbar .sub{font-size:11.5px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}
+}
+
+/* ============================================================
+   PRINT — cheat sheet friendly
+   ============================================================ */
+@media print{
+  body{background:#fff;font-size:11.5pt}
+  .sidebar,.topbar-actions,.secnav,.no-print,#presentBar{display:none!important}
+  .app{display:block}
+  .topbar{position:static;border:0;padding:0 0 10px}
+  .section{display:none!important}
+  .section.active{display:block!important}
+  .block{box-shadow:none;break-inside:avoid;page-break-inside:avoid}
+  .cheat .c,.mis{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="mark">Interactive lesson</span>
+      <h2>2D Transformations</h2>
+      <span class="badge">Computer Graphics</span>
+    </div>
+    <nav class="nav" id="nav" aria-label="Lesson sections"></nav>
+    <div class="progress-box">
+      <div class="lab"><span>Lesson progress</span><span id="progPct">0%</span></div>
+      <div class="bar"><span id="progBar"></span></div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <h1>Two-Dimensional Transformations</h1>
+        <p class="sub">Translation • Rotation • Scaling • Reflection • Shearing • Homogeneous Coordinates</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn" id="teacherBtn" aria-pressed="false">Teacher mode</button>
+        <button class="btn" id="presentBtn" aria-pressed="false">Presentation mode</button>
+      </div>
+    </header>
+
+    <main class="sections" id="sections">
+
+    <!-- ==================== 1. OVERVIEW ==================== -->
+    <section class="section" id="overview" data-title="Transformation overview">
+      <div class="block">
+        <p class="eyebrow"><span class="step">Start here</span> What you are about to learn</p>
+        <p class="lede">A transformation is a rule that takes every point of an object and moves it to a new place.</p>
+        <p style="margin-top:12px">The object itself never "knows" it moved. All that changes are its coordinates. Every effect you have seen in a game, a photo editor or a CAD tool — sliding, spinning, zooming, mirroring, slanting — is one of these five rules applied to a list of points.</p>
+        <div class="deep"><b>The formal version:</b> a 2D geometric transformation maps each point <code>P(x, y)</code> to a new point <code>P'(x', y')</code> using a fixed set of equations. The five transformations below are <i>affine</i>: straight lines stay straight and parallel lines stay parallel.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">Map</span> The five transformations</p>
+        <div class="map">
+          <div class="root">2D Transformations</div>
+          <div class="stem"></div>
+          <div class="rail"></div>
+          <div class="legs"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="row">
+            <div class="node" data-go="translation">Translation<small>move</small></div>
+            <div class="node" data-go="rotation">Rotation<small>turn</small></div>
+            <div class="node" data-go="scaling">Scaling<small>resize</small></div>
+            <div class="node" data-go="reflection">Reflection<small>mirror</small></div>
+            <div class="node" data-go="shearing">Shearing<small>slant</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">Cards</span> Pick one to begin</p>
+        <div class="grid3">
+          <button class="tcard" data-go="translation"><span class="ico">➡️</span><h4>Translation</h4><p>Move an object from one position to another.</p><span class="go">Open lesson →</span></button>
+          <button class="tcard" data-c="rose" data-go="rotation"><span class="ico">🔄</span><h4>Rotation</h4><p>Turn an object around a point.</p><span class="go">Open lesson →</span></button>
+          <button class="tcard" data-c="teal" data-go="scaling"><span class="ico">🔍</span><h4>Scaling</h4><p>Increase or decrease the size of an object.</p><span class="go">Open lesson →</span></button>
+          <button class="tcard" data-c="amber" data-go="reflection"><span class="ico">🪞</span><h4>Reflection</h4><p>Create a mirror image of an object.</p><span class="go">Open lesson →</span></button>
+          <button class="tcard" data-c="navy" data-go="shearing"><span class="ico">📐</span><h4>Shearing</h4><p>Slant or distort the shape of an object.</p><span class="go">Open lesson →</span></button>
+          <button class="tcard" data-c="rose" data-go="homogeneous"><span class="ico">🧮</span><h4>Homogeneous coordinates</h4><p>Add a third coordinate so every transformation becomes one matrix.</p><span class="go">Open lesson →</span></button>
+        </div>
+        <div class="teach"><span class="h">Teaching point</span>Ask the class before you start: <i>"If I slide this duster across the table, has it become a different duster?"</i> <span class="ans">Expected answer: no — only its position changed.</span> That is exactly what a transformation does to coordinates.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">Route</span> How this lesson is ordered</p>
+        <p class="small muted">Each lesson follows the same seven steps: <b>what is it → visualize it → mathematics → matrix → worked example → try it → real-world use</b>. Work down the sidebar in order; the progress bar fills as you visit each section.</p>
+        <div class="eq" style="line-height:2.2">
+          Coordinate system → concept of transformation → translation → rotation → scaling → reflection → shearing → homogeneous coordinates → matrices → composition → playground → quiz
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 2. COORDINATE SYSTEM ==================== -->
+    <section class="section" id="coords" data-title="Coordinate system">
+      <div class="block">
+        <p class="eyebrow"><span class="step">01</span> What is it</p>
+        <p class="lede">Before you can move a shape, you need an address system for every point on the screen.</p>
+        <p style="margin-top:12px">That address system is the <b>Cartesian plane</b>. Two number lines cross at right angles. The horizontal line is the <b>x-axis</b>, the vertical line is the <b>y-axis</b>, and the crossing point is the <b>origin</b>, written <code>O(0, 0)</code>.</p>
+        <div class="eq">A point is written <b>P = (x, y)</b> &nbsp;— x first (how far right), y second (how far up).</div>
+        <p>Every transformation in this lesson does exactly one thing: it takes the numbers <code>x</code> and <code>y</code> and produces new numbers <code>x'</code> and <code>y'</code>. Nothing else changes.</p>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">02</span> Visualize it — click anywhere on the grid</p>
+        <div class="lab">
+          <div>
+            <div class="graph" id="co-graph"></div>
+            <div class="legend"><span>Click or tap the grid to drop a point. Values snap to the nearest 0.5.</span></div>
+          </div>
+          <div>
+            <div class="panel">
+              <h4>Selected point</h4>
+              <div style="font-family:var(--mono);font-size:26px;font-weight:600;color:var(--rose)" id="co-read">P(3, 2)</div>
+              <div class="small muted" style="margin-top:8px" id="co-desc">3 units along +x, then 2 units along +y.</div>
+            </div>
+            <div class="panel">
+              <h4>Quadrant</h4>
+              <div class="small" id="co-quad">Quadrant I — x positive, y positive</div>
+              <div class="small muted" style="margin-top:8px">Signs decide the quadrant: (+,+) I, (−,+) II, (−,−) III, (+,−) IV.</div>
+            </div>
+            <div class="panel">
+              <h4>Reset</h4>
+              <button class="btn sm" data-reset="co">Reset point</button>
+            </div>
+          </div>
+        </div>
+        <div class="note tip"><span class="h">Screen coordinates differ</span>Mathematics puts +y upward, which is what this dashboard uses. Most display hardware puts +y <i>downward</i>, with the origin at the top-left corner. The mathematics is identical — only the direction of the y-axis flips.</div>
+        <div class="teach"><span class="h">Ask the class</span>"Where does P(−3, 2) sit?" <span class="ans">Expected answer: quadrant II — left of the y-axis, above the x-axis.</span> Then ask what happens to a shape whose points all have their x-sign flipped (answer: it mirrors — you have just previewed reflection).</div>
+      </div>
+    </section>
+
+    <!-- ==================== 3. TRANSLATION ==================== -->
+    <section class="section" id="translation" data-title="Translation">
+      <div class="block">
+        <p class="eyebrow"><span class="step">01</span> What is it</p>
+        <p class="lede">Translation moves an object from one position to another without changing its size, shape or orientation.</p>
+        <p style="margin-top:12px">Think of sliding a book across a table. Every corner of the book travels the same distance in the same direction. In graphics that distance is stored as two numbers: <code>Tx</code> (how far along x) and <code>Ty</code> (how far along y).</p>
+        <div class="deep"><b>Deeper:</b> translation is a <i>rigid body</i> transformation — distances between points and angles inside the object are both preserved.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">02 · 06</span> Visualize it and try it</p>
+        <div class="lab">
+          <div>
+            <div class="graph" id="tr-graph"></div>
+            <div class="legend"><span><i class="g"></i>Original</span><span><i class="a"></i>Translated</span><span style="color:var(--amber)">Amber arrows = Tx then Ty</span></div>
+          </div>
+          <div>
+            <div class="panel">
+              <h4>Translation controls</h4>
+              <div class="ctrl"><label for="tr-tx"><b>Tx</b> shift along x <output id="tr-tx-out">3</output></label>
+                <input type="range" id="tr-tx" min="-7" max="7" step="0.5" value="3"></div>
+              <div class="ctrl"><label for="tr-ty"><b>Ty</b> shift along y <output id="tr-ty-out">2</output></label>
+                <input type="range" id="tr-ty" min="-7" max="7" step="0.5" value="2"></div>
+              <div class="chip-row" style="margin-bottom:12px">
+                <button class="chip" data-tr="3,2">Tx 3, Ty 2</button>
+                <button class="chip" data-tr="-4,0">Left only</button>
+                <button class="chip" data-tr="0,4">Up only</button>
+              </div>
+              <button class="btn sm" data-reset="tr">Reset</button>
+              <button class="btn sm primary" id="tr-play">Animate the slide</button>
+            </div>
+            <div class="panel">
+              <h4>Live matrix (homogeneous)</h4>
+              <div id="tr-matrix"></div>
+              <div class="small muted" style="margin-top:6px">The third column carries Tx and Ty.</div>
+            </div>
+          </div>
+        </div>
+        <div class="scrollx" style="margin-top:16px"><table class="data" id="tr-table"></table></div>
+        <div class="teach"><span class="h">Teaching point</span>Ask: "If I translate an object, does its shape change?" <span class="ans">Expected answer: no.</span> Follow up: "Does the distance between any two of its corners change?" <span class="ans">Also no.</span></div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">03 · 04</span> Mathematics and matrix</p>
+        <p>Add the shift to each coordinate:</p>
+        <div class="eq">x' = x + <b>Tx</b><br>y' = y + <b>Ty</b></div>
+        <p>Written with a 2×1 column and a translation vector:</p>
+        <div class="eqrow" id="tr-eq2"></div>
+        <p class="small muted">Notice that translation is an <b>addition</b>, while rotation and scaling are <b>multiplications</b>. Mixing addition with multiplication is awkward, and that single problem is the reason homogeneous coordinates exist. In 3×3 homogeneous form the same translation becomes a pure multiplication:</p>
+        <div class="eqrow" id="tr-eq3"></div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">05</span> Worked example</p>
+        <p>Translate <code>P(2, 3)</code> by <code>Tx = 4</code>, <code>Ty = 2</code>.</p>
+        <div class="eq">x' = 2 + 4 = <b>6</b><br>y' = 3 + 2 = <b>5</b><br>Therefore <b>P'(6, 5)</b></div>
+        <div class="ba">
+          <div class="cell before"><span class="k">Before</span><span class="v">P(2, 3)</span></div>
+          <div class="arw">→</div>
+          <div class="cell"><span class="k">Transformation</span><span class="v" style="font-size:14px">T(4, 2)</span></div>
+          <div class="arw">→</div>
+          <div class="cell after"><span class="k">After</span><span class="v">P'(6, 5)</span></div>
+        </div>
+        <div class="graph" id="tr-ex-graph" style="max-width:460px;margin:16px auto 0"></div>
+        <div style="text-align:center;margin-top:12px"><button class="btn primary" id="tr-ex-play">Animate P(2,3) → P'(6,5)</button></div>
+      </div>
+
+      <div class="block p-hide">
+        <p class="eyebrow"><span class="step">Try this yourself</span> Challenge</p>
+        <div class="chal" data-chal="c1" data-answers="5,3">
+          <div class="p">Move point P(2, 3) to P'(7, 6). What should Tx and Ty be?</div>
+          <div class="fields">
+            <label class="f"><span>Tx</span><input type="number" step="any" data-i="0"></label>
+            <label class="f"><span>Ty</span><input type="number" step="any" data-i="1"></label>
+            <button class="btn sm primary" data-check>Check answer</button>
+            <button class="btn sm ghost" data-show>Show solution</button>
+          </div>
+          <div class="fb" data-fb></div>
+          <div class="why" data-why>Tx = 7 − 2 = <b>5</b> and Ty = 6 − 3 = <b>3</b>. To find a translation, subtract the old coordinate from the new one.</div>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">07</span> Where it is used</p>
+        <div class="note app"><span class="h">In computer graphics</span>Moving a car across a game screen, scrolling a map, dragging a window, panning a camera, and positioning every sprite in a 2D scene.</div>
+      </div>
+    </section>
+
+    <!-- ==================== 4. ROTATION ==================== -->
+    <section class="section" id="rotation" data-title="Rotation">
+      <div class="block">
+        <p class="eyebrow"><span class="step">01</span> What is it</p>
+        <p class="lede">Rotation turns an object around a fixed point, called the pivot or rotation centre.</p>
+        <p style="margin-top:12px">Every point of the object travels along a circle centred on the pivot. The default pivot is the origin <code>O(0, 0)</code>. A positive angle turns <b>counter-clockwise</b>; a negative angle turns clockwise.</p>
+        <div class="deep"><b>Deeper:</b> like translation, rotation preserves distances and angles — only the orientation changes. The distance of each point from the pivot stays exactly the same.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">02 · 06</span> Visualize it and try it</p>
+        <div class="lab">
+          <div>
+            <div class="graph" id="ro-graph"></div>
+            <div class="legend"><span><i class="g"></i>Original</span><span><i class="a"></i>Rotated</span><span style="color:var(--amber)">Amber arc = θ</span></div>
+          </div>
+          <div>
+            <div class="panel">
+              <h4>Rotation controls</h4>
+              <div class="ctrl"><label for="ro-ang"><b>θ</b> angle in degrees <output id="ro-ang-out">45</output></label>
+                <input type="range" id="ro-ang" min="0" max="360" step="1" value="45"></div>
+              <div class="chip-row" style="margin-bottom:12px">
+                <button class="chip" data-ang="30">30°</button><button class="chip" data-ang="45">45°</button>
+                <button class="chip" data-ang="90">90°</button><button class="chip" data-ang="180">180°</button>
+                <button class="chip" data-ang="270">270°</button>
+              </div>
+              <h4 style="margin-top:16px">Direction</h4>
+              <div class="chip-row" style="margin-bottom:12px">
+                <button class="chip active" data-dir="1">Counter-clockwise</button>
+                <button class="chip" data-dir="-1">Clockwise</button>
+              </div>
+              <h4 style="margin-top:16px">Rotation centre</h4>
+              <div class="chip-row" style="margin-bottom:12px">
+                <button class="chip active" data-cen="0,0">Origin (0,0)</button>
+                <button class="chip" data-cen="2,1">(2, 1)</button>
+                <button class="chip" data-cen="c">Shape centre</button>
+              </div>
+              <button class="btn sm" data-reset="ro">Reset</button>
+              <button class="btn sm primary" id="ro-play">Animate the turn</button>
+            </div>
+            <div class="panel">
+              <h4>Live matrix</h4>
+              <div id="ro-matrix"></div>
+              <div class="small muted" style="margin-top:6px" id="ro-vals"></div>
+            </div>
+          </div>
+        </div>
+        <div class="scrollx" style="margin-top:16px"><table class="data" id="ro-table"></table></div>
+        <div class="teach"><span class="h">Common mistake</span>Students confuse rotation direction and coordinate signs. Rotating by +90° sends (1, 0) to (0, 1), not to (0, −1). Have them test one point by hand before trusting the matrix.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">03 · 04</span> Mathematics and matrix</p>
+        <div class="eq">x' = x·cos θ − y·sin θ<br>y' = x·sin θ + y·cos θ</div>
+        <div class="eqrow" id="ro-eq2"></div>
+        <p class="small muted">Watch the minus sign: it sits in the <b>top-right</b> position for counter-clockwise rotation. Flip the sign of θ and the two sine terms swap signs, giving clockwise rotation.</p>
+        <p style="margin-top:12px">In homogeneous 3×3 form the rotation block sits in the top-left corner and the third column stays empty because rotation about the origin involves no shifting:</p>
+        <div class="eqrow" id="ro-eq3"></div>
+        <div class="note tip"><span class="h">Rotating about any other point</span>Move the pivot to the origin, rotate, then move it back: <code>M = T(cx, cy) · R(θ) · T(−cx, −cy)</code>. The "Shape centre" button above does exactly this.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">05</span> Worked example</p>
+        <p>Rotate <code>P(2, 1)</code> by <code>θ = 90°</code> counter-clockwise about the origin.</p>
+        <div class="eq">cos 90° = 0 &nbsp;&nbsp; sin 90° = 1<br>x' = 2(0) − 1(1) = <b>−1</b><br>y' = 2(1) + 1(0) = <b>2</b><br>Therefore <b>P'(−1, 2)</b></div>
+        <div class="ba">
+          <div class="cell before"><span class="k">Before</span><span class="v">P(2, 1)</span></div>
+          <div class="arw">→</div>
+          <div class="cell"><span class="k">Transformation</span><span class="v" style="font-size:14px">R(90°)</span></div>
+          <div class="arw">→</div>
+          <div class="cell after"><span class="k">After</span><span class="v">P'(−1, 2)</span></div>
+        </div>
+        <div class="graph" id="ro-ex-graph" style="max-width:460px;margin:16px auto 0"></div>
+        <div style="text-align:center;margin-top:12px"><button class="btn primary" id="ro-ex-play">Animate the 90° turn</button></div>
+      </div>
+
+      <div class="block p-hide">
+        <p class="eyebrow"><span class="step">Try this yourself</span> Challenge</p>
+        <div class="chal" data-chal="c2" data-answers="0,1">
+          <div class="p">Rotate P(1, 0) by 90° counter-clockwise about the origin. What is P'?</div>
+          <div class="fields">
+            <label class="f"><span>x'</span><input type="number" step="any" data-i="0"></label>
+            <label class="f"><span>y'</span><input type="number" step="any" data-i="1"></label>
+            <button class="btn sm primary" data-check>Check answer</button>
+            <button class="btn sm ghost" data-show>Show solution</button>
+          </div>
+          <div class="fb" data-fb></div>
+          <div class="why" data-why>x' = 1(cos90) − 0(sin90) = 0 and y' = 1(sin90) + 0(cos90) = 1, so <b>P'(0, 1)</b>. The point on the +x axis swings up onto the +y axis.</div>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">07</span> Where it is used</p>
+        <div class="note app"><span class="h">In computer graphics</span>Spinning a character or vehicle, orienting a satellite view, rotating an image in a photo editor, turning gauge needles and compass dials, and animating anything that swings around a hinge.</div>
+      </div>
+    </section>
+
+    <!-- ==================== 5. SCALING ==================== -->
+    <section class="section" id="scaling" data-title="Scaling">
+      <div class="block">
+        <p class="eyebrow"><span class="step">01</span> What is it</p>
+        <p class="lede">Scaling changes the size of an object by multiplying its coordinates.</p>
+        <p style="margin-top:12px">A scale factor larger than 1 enlarges, a factor between 0 and 1 shrinks, and a factor of exactly 1 leaves that direction untouched. Because the coordinates are multiplied, scaling about the origin also drags the object <i>toward or away from</i> the origin.</p>
+        <div class="deep"><b>Deeper:</b> a negative scale factor flips the object — <code>Sx = −1</code> is exactly reflection about the y-axis. Reflection is a special case of scaling.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">02 · 06</span> Visualize it and try it</p>
+        <div class="lab">
+          <div>
+            <div class="graph" id="sc-graph"></div>
+            <div class="legend"><span><i class="g"></i>Original</span><span><i class="a"></i>Scaled</span><span style="color:var(--amber)">Amber arrows = width and height change</span></div>
+          </div>
+          <div>
+            <div class="panel">
+              <h4>Scaling controls</h4>
+              <div class="ctrl"><label for="sc-sx"><b>Sx</b> horizontal factor <output id="sc-sx-out">2</output></label>
+                <input type="range" id="sc-sx" min="0.25" max="3" step="0.05" value="2"></div>
+              <div class="ctrl"><label for="sc-sy"><b>Sy</b> vertical factor <output id="sc-sy-out">1.5</output></label>
+                <input type="range" id="sc-sy" min="0.25" max="3" step="0.05" value="1.5"></div>
+              <div class="chip-row" style="margin-bottom:12px">
+                <button class="chip" data-sc="0.5">0.5×</button><button class="chip" data-sc="1">1×</button>
+                <button class="chip" data-sc="2">2×</button><button class="chip" data-sc="3">3×</button>
+              </div>
+              <div id="sc-kind" class="small" style="margin-bottom:12px"></div>
+              <button class="btn sm" data-reset="sc">Reset</button>
+              <button class="btn sm primary" id="sc-play">Animate the resize</button>
+            </div>
+            <div class="panel">
+              <h4>Live matrix</h4>
+              <div id="sc-matrix"></div>
+              <div class="small muted" style="margin-top:6px">Only the diagonal changes.</div>
+            </div>
+          </div>
+        </div>
+        <div class="scrollx" style="margin-top:16px"><table class="data" id="sc-table"></table></div>
+        <div class="teach"><span class="h">Ask the class</span>"What happens when Sx ≠ Sy?" <span class="ans">Expected answer: the object stretches differently along x and y, so its proportions change.</span> Then ask what Sx = Sy = 1 does (answer: nothing — that is the identity matrix).</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">03 · 04</span> Mathematics and matrix</p>
+        <div class="eq">x' = <b>Sx</b> · x<br>y' = <b>Sy</b> · y</div>
+        <div class="eqrow" id="sc-eq2"></div>
+        <div class="grid2" style="margin-top:14px">
+          <div class="panel"><h4>Uniform scaling</h4><p class="small" style="margin:0"><code>Sx = Sy</code> — the shape grows or shrinks proportionally. Angles are preserved, so a square stays a square.</p></div>
+          <div class="panel"><h4>Non-uniform scaling</h4><p class="small" style="margin:0"><code>Sx ≠ Sy</code> — the object stretches more in one direction. A circle becomes an ellipse and a square becomes a rectangle.</p></div>
+        </div>
+        <p style="margin-top:14px">Homogeneous 3×3 form:</p>
+        <div class="eqrow" id="sc-eq3"></div>
+        <div class="note tip"><span class="h">Scaling about a fixed point</span>Scaling about the origin also moves the object. To grow a shape in place, translate its centre to the origin, scale, then translate back: <code>M = T(cx, cy) · S · T(−cx, −cy)</code>.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">05</span> Worked example</p>
+        <p>Scale <code>P(2, 3)</code> by <code>Sx = 2</code>, <code>Sy = 3</code>.</p>
+        <div class="eq">x' = 2 × 2 = <b>4</b><br>y' = 3 × 3 = <b>9</b><br>Therefore <b>P'(4, 9)</b></div>
+        <div class="ba">
+          <div class="cell before"><span class="k">Before</span><span class="v">P(2, 3)</span></div>
+          <div class="arw">→</div>
+          <div class="cell"><span class="k">Transformation</span><span class="v" style="font-size:14px">S(2, 3)</span></div>
+          <div class="arw">→</div>
+          <div class="cell after"><span class="k">After</span><span class="v">P'(4, 9)</span></div>
+        </div>
+      </div>
+
+      <div class="block p-hide">
+        <p class="eyebrow"><span class="step">Try this yourself</span> Challenge</p>
+        <div class="chal" data-chal="c3" data-answers="4,9">
+          <div class="p">Scale P(2, 3) by Sx = 2 and Sy = 3. What is P'?</div>
+          <div class="fields">
+            <label class="f"><span>x'</span><input type="number" step="any" data-i="0"></label>
+            <label class="f"><span>y'</span><input type="number" step="any" data-i="1"></label>
+            <button class="btn sm primary" data-check>Check answer</button>
+            <button class="btn sm ghost" data-show>Show solution</button>
+          </div>
+          <div class="fb" data-fb></div>
+          <div class="why" data-why>Multiply, do not add: x' = 2×2 = <b>4</b>, y' = 3×3 = <b>9</b>, so <b>P'(4, 9)</b>.</div>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">07</span> Where it is used</p>
+        <div class="note app"><span class="h">In computer graphics</span>Zooming an image, resizing a window, fitting a model to the viewport, pinch-to-zoom on a map, and the "grow on hover" effect on buttons.</div>
+      </div>
+    </section>
+
+    <!-- ==================== 6. REFLECTION ==================== -->
+    <section class="section" id="reflection" data-title="Reflection">
+      <div class="block">
+        <p class="eyebrow"><span class="step">01</span> What is it</p>
+        <p class="lede">Reflection produces the mirror image of an object across a line or a point.</p>
+        <p style="margin-top:12px">Hold a shape against a mirror: every point ends up on the opposite side, exactly the same distance away from the mirror line. In graphics the mirror is usually the x-axis, the y-axis, the origin or the line y = x.</p>
+        <div class="deep"><b>Deeper:</b> reflection reverses <i>orientation</i>. A triangle whose corners are labelled A→B→C counter-clockwise becomes clockwise after one reflection. Reflecting twice returns the original — the matrix is its own inverse.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">02 · 06</span> Visualize it and try it</p>
+        <div class="lab">
+          <div>
+            <div class="graph" id="rf-graph"></div>
+            <div class="legend"><span><i class="g"></i>Original</span><span><i class="a"></i>Reflected</span><span style="color:var(--teal)">Teal dashes = mirror line</span></div>
+          </div>
+          <div>
+            <div class="panel">
+              <h4>Choose the mirror</h4>
+              <div class="chip-row" style="margin-bottom:12px">
+                <button class="chip active" data-rf="x">Reflect about x-axis</button>
+                <button class="chip" data-rf="y">Reflect about y-axis</button>
+                <button class="chip" data-rf="o">Reflect about origin</button>
+                <button class="chip" data-rf="d">Reflect about y = x</button>
+              </div>
+              <button class="btn sm" data-reset="rf">Reset</button>
+              <button class="btn sm primary" id="rf-play">Animate the flip</button>
+            </div>
+            <div class="panel">
+              <h4>Live matrix</h4>
+              <div id="rf-matrix"></div>
+              <div class="small muted" style="margin-top:6px" id="rf-rule"></div>
+            </div>
+          </div>
+        </div>
+        <div class="scrollx" style="margin-top:16px"><table class="data" id="rf-table"></table></div>
+        <div class="teach"><span class="h">Common mistake</span>Students confuse reflection about the origin with a 180° rotation. Numerically they give the same matrix, but the reasoning differs — and for a mirror line other than the axes the two are not the same at all. Ask them to compare corner order: rotation keeps it, reflection reverses it.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">03 · 04</span> Mathematics and matrix</p>
+        <div class="grid3">
+          <div class="panel"><h4>About the x-axis</h4><div class="eq" style="margin-top:0">x' = x<br>y' = −y</div><div id="rf-m1"></div></div>
+          <div class="panel"><h4>About the y-axis</h4><div class="eq" style="margin-top:0">x' = −x<br>y' = y</div><div id="rf-m2"></div></div>
+          <div class="panel"><h4>About the origin</h4><div class="eq" style="margin-top:0">x' = −x<br>y' = −y</div><div id="rf-m3"></div></div>
+        </div>
+        <p class="small muted" style="margin-top:12px">Reflection about the line y = x simply swaps the coordinates: <code>x' = y</code>, <code>y' = x</code>. Its matrix is the identity with the two rows exchanged.</p>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">05</span> Worked example</p>
+        <p>Reflect <code>P(4, −2)</code> about the x-axis.</p>
+        <div class="eq">x' = 4<br>y' = −(−2) = <b>2</b><br>Therefore <b>P'(4, 2)</b></div>
+        <div class="ba">
+          <div class="cell before"><span class="k">Before</span><span class="v">P(4, −2)</span></div>
+          <div class="arw">→</div>
+          <div class="cell"><span class="k">Transformation</span><span class="v" style="font-size:14px">Reflect x-axis</span></div>
+          <div class="arw">→</div>
+          <div class="cell after"><span class="k">After</span><span class="v">P'(4, 2)</span></div>
+        </div>
+      </div>
+
+      <div class="block p-hide">
+        <p class="eyebrow"><span class="step">Try this yourself</span> Challenge</p>
+        <div class="chal" data-chal="c4" data-answers="4,2">
+          <div class="p">Reflect P(4, −2) about the x-axis. What is P'?</div>
+          <div class="fields">
+            <label class="f"><span>x'</span><input type="number" step="any" data-i="0"></label>
+            <label class="f"><span>y'</span><input type="number" step="any" data-i="1"></label>
+            <button class="btn sm primary" data-check>Check answer</button>
+            <button class="btn sm ghost" data-show>Show solution</button>
+          </div>
+          <div class="fb" data-fb></div>
+          <div class="why" data-why>Reflecting about the x-axis keeps x and flips the sign of y: x' = 4, y' = −(−2) = 2, so <b>P'(4, 2)</b>.</div>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">07</span> Where it is used</p>
+        <div class="note app"><span class="h">In computer graphics</span>Water reflections in games, mirrored UI layouts for right-to-left languages, flipping a sprite so a character faces the other way, and symmetry tools in drawing software.</div>
+      </div>
+    </section>
+
+    <!-- ==================== 7. SHEARING ==================== -->
+    <section class="section" id="shearing" data-title="Shearing">
+      <div class="block">
+        <p class="eyebrow"><span class="step">01</span> What is it</p>
+        <p class="lede">Shearing slants an object by shifting one coordinate by an amount that depends on the other coordinate.</p>
+        <p style="margin-top:12px">Push the top of a deck of cards sideways. The bottom card stays put, the top card moves the most, and the deck leans over. That is a shear: the higher a point sits, the further it slides. A rectangle becomes a parallelogram.</p>
+        <div class="deep"><b>Deeper:</b> shearing preserves area but not angles or lengths. Points already on the reference axis do not move at all.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">02 · 06</span> Visualize it and try it</p>
+        <div class="lab">
+          <div>
+            <div class="graph" id="sr-graph"></div>
+            <div class="legend"><span><i class="g"></i>Original rectangle</span><span><i class="a"></i>Sheared parallelogram</span><span style="color:var(--amber)">Amber arrows = displacement</span></div>
+          </div>
+          <div>
+            <div class="panel">
+              <h4>Shear controls</h4>
+              <div class="chip-row" style="margin-bottom:14px">
+                <button class="chip active" data-sh="x">X-shear</button>
+                <button class="chip" data-sh="y">Y-shear</button>
+                <button class="chip" data-sh="b">Both</button>
+              </div>
+              <div class="ctrl"><label for="sr-kx"><b>kx</b> x-shear factor <output id="sr-kx-out">1</output></label>
+                <input type="range" id="sr-kx" min="-2" max="2" step="0.05" value="1"></div>
+              <div class="ctrl" id="sr-ky-wrap" style="display:none"><label for="sr-ky"><b>ky</b> y-shear factor <output id="sr-ky-out">0</output></label>
+                <input type="range" id="sr-ky" min="-2" max="2" step="0.05" value="0"></div>
+              <button class="btn sm" data-reset="sr">Reset</button>
+              <button class="btn sm primary" id="sr-play">Animate the slant</button>
+            </div>
+            <div class="panel">
+              <h4>Live matrix</h4>
+              <div id="sr-matrix"></div>
+              <div class="small muted" style="margin-top:6px" id="sr-rule"></div>
+            </div>
+          </div>
+        </div>
+        <div class="scrollx" style="margin-top:16px"><table class="data" id="sr-table"></table></div>
+        <div class="teach"><span class="h">Teaching point</span>Ask which corners move the most. <span class="ans">Expected answer: for an x-shear, the corners with the largest y.</span> Points sitting on the x-axis do not move at all — that is why the shape leans instead of sliding.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">03 · 04</span> Mathematics and matrix</p>
+        <div class="grid2">
+          <div class="panel"><h4>X-shear</h4><div class="eq" style="margin-top:0">x' = x + <b>kx</b>·y<br>y' = y</div><div id="sr-m1"></div><p class="small muted" style="margin-top:8px">x is pushed sideways in proportion to y.</p></div>
+          <div class="panel"><h4>Y-shear</h4><div class="eq" style="margin-top:0">x' = x<br>y' = y + <b>ky</b>·x</div><div id="sr-m2"></div><p class="small muted" style="margin-top:8px">y is pushed upward in proportion to x.</p></div>
+        </div>
+        <p class="small muted" style="margin-top:12px">In homogeneous form the shear factors occupy the off-diagonal positions of the top-left 2×2 block, with the third row and column left as identity.</p>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">05</span> Worked example</p>
+        <p>Apply an x-shear with <code>kx = 2</code> to <code>P(1, 3)</code>.</p>
+        <div class="eq">x' = 1 + 2(3) = <b>7</b><br>y' = 3<br>Therefore <b>P'(7, 3)</b></div>
+        <div class="ba">
+          <div class="cell before"><span class="k">Before</span><span class="v">P(1, 3)</span></div>
+          <div class="arw">→</div>
+          <div class="cell"><span class="k">Transformation</span><span class="v" style="font-size:14px">X-shear, kx = 2</span></div>
+          <div class="arw">→</div>
+          <div class="cell after"><span class="k">After</span><span class="v">P'(7, 3)</span></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">07</span> Where it is used</p>
+        <div class="note app"><span class="h">In computer graphics</span>Italic and slanted text, isometric tile projections, "leaning" motion effects in 2D animation, and skew tools in vector editors.</div>
+      </div>
+    </section>
+
+    <!-- ==================== 8. HOMOGENEOUS COORDINATES ==================== -->
+    <section class="section" id="homogeneous" data-title="Homogeneous coordinates">
+      <div class="block">
+        <p class="eyebrow"><span class="step">01</span> The problem first</p>
+        <p class="lede">Translation cannot be written as a 2×2 matrix multiplication. Every other transformation can.</p>
+        <p style="margin-top:12px">Rotation, scaling, reflection and shearing all multiply the coordinates. Translation <i>adds</i> to them:</p>
+        <div class="eq">x' = x + Tx &nbsp;&nbsp;&nbsp; y' = y + Ty</div>
+        <p>No 2×2 matrix can produce a constant term, because every entry of the result is a multiple of x or y. So a pipeline that mixes moves with turns would need two different kinds of operation — multiply, then add, then multiply, then add. That is slow, error-prone, and impossible to collapse into a single matrix.</p>
+        <div class="quote">The fix: give every point a third coordinate that is always 1.</div>
+        <div class="eqrow" style="font-size:17px"><span>(x, y)</span><span class="op">→</span><span style="color:var(--rose);font-weight:600">(x, y, 1)</span></div>
+        <p>This is called a <b>homogeneous coordinate</b>. The extra 1 gives the matrix a slot to inject a constant, which turns addition into multiplication. Now every transformation is a 3×3 matrix, and any sequence of them multiplies into one single matrix.</p>
+        <div class="deep"><b>Deeper:</b> in general a homogeneous point is (x·w, y·w, w) for any w ≠ 0, and you recover the Cartesian point by dividing by w. Using w = 1 is just the convenient normalized case. The full form is what makes perspective projection possible in 3D.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">02</span> The homogeneous translation matrix — click any cell</p>
+        <div class="lab">
+          <div>
+            <div class="eqrow" id="hc-big"></div>
+            <div class="panel" style="margin-top:14px">
+              <h4>What this cell does</h4>
+              <div id="hc-note" class="small">Click a cell in the matrix above to see the job it performs.</div>
+            </div>
+          </div>
+          <div>
+            <div class="panel">
+              <h4>Read the structure</h4>
+              <ul class="small" style="margin:0;padding-left:18px;line-height:1.9">
+                <li><b>Tx</b> in the third column → movement along x</li>
+                <li><b>Ty</b> in the third column → movement along y</li>
+                <li>The 2×2 top-left block → rotation, scaling, reflection, shear all live here</li>
+                <li>The last row <code>0 0 1</code> → keeps the third coordinate equal to 1 so the point stays valid</li>
+              </ul>
+            </div>
+            <div class="teach"><span class="h">Common mistake</span>Students forget the third coordinate and try to multiply a 3×3 matrix by a 2×1 column. Remind them: the shapes must match — 3×3 times 3×1 gives 3×1.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">03</span> Step-by-step matrix multiplication</p>
+        <p class="small muted">Change any value, then run the multiplication row by row. Each row of the matrix meets the whole column vector.</p>
+        <div class="lab">
+          <div>
+            <div class="eqrow" id="hc-calc-eq"></div>
+            <div id="hc-steps" style="margin-top:16px"></div>
+          </div>
+          <div>
+            <div class="panel">
+              <h4>Inputs</h4>
+              <div class="grid2" style="gap:10px">
+                <label class="f small"><span class="muted">x</span><input type="number" id="hc-x" value="2" step="any"></label>
+                <label class="f small"><span class="muted">y</span><input type="number" id="hc-y" value="3" step="any"></label>
+                <label class="f small"><span class="muted">Tx</span><input type="number" id="hc-tx" value="4" step="any"></label>
+                <label class="f small"><span class="muted">Ty</span><input type="number" id="hc-ty" value="2" step="any"></label>
+              </div>
+              <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn sm primary" id="hc-run">Show steps</button>
+                <button class="btn sm" data-reset="hc">Reset</button>
+              </div>
+            </div>
+            <div class="panel">
+              <h4>Result</h4>
+              <div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--rose)" id="hc-result">P'(6, 5)</div>
+              <div class="small muted" style="margin-top:6px">Drop the third coordinate to read the Cartesian point.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 9. COMPOSITION ==================== -->
+    <section class="section" id="composition" data-title="Transformation composition">
+      <div class="block">
+        <p class="eyebrow"><span class="step">01</span> What is it</p>
+        <p class="lede">Several transformations can be multiplied together into one single matrix.</p>
+        <p style="margin-top:12px">A game object might need to be resized, turned and then placed somewhere on screen. Instead of transforming every vertex three times, multiply the three matrices once and transform every vertex once. For a model with 50,000 vertices, that is 100,000 operations saved.</p>
+        <div class="eqrow" style="font-size:19px"><span style="font-family:var(--mono);font-weight:600">P' = T · R · S · P</span></div>
+        <div class="quote">Matrix multiplication is performed from right to left — the matrix closest to the point acts first.</div>
+        <div class="eq">S happens first &nbsp;→&nbsp; then R &nbsp;→&nbsp; then T</div>
+        <div class="deep"><b>Deeper:</b> this ordering comes from associativity: <code>T(R(S·P))</code> = <code>(T·R·S)·P</code>. The product <code>M = T·R·S</code> is often called the composite, concatenated or model matrix.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">02</span> Watch it happen, one stage at a time</p>
+        <div class="lab">
+          <div>
+            <div class="graph" id="cp-graph"></div>
+            <div class="legend"><span><i class="g"></i>Original</span><span><i class="a"></i>Current stage</span><span style="color:#9AA9C2">Grey dashes = earlier stages</span></div>
+          </div>
+          <div>
+            <div class="panel">
+              <h4>Stage</h4>
+              <div class="chip-row" style="margin-bottom:12px">
+                <button class="chip active" data-cp="0">0 · Original</button>
+                <button class="chip" data-cp="1">1 · Scale</button>
+                <button class="chip" data-cp="2">2 · Rotate</button>
+                <button class="chip" data-cp="3">3 · Translate</button>
+              </div>
+              <div class="small" id="cp-desc" style="margin-bottom:12px"></div>
+              <div class="ctrl"><label for="cp-sx"><b>Sx</b> <output id="cp-sx-out">1.6</output></label><input type="range" id="cp-sx" min="0.3" max="2.5" step="0.05" value="1.6"></div>
+              <div class="ctrl"><label for="cp-sy"><b>Sy</b> <output id="cp-sy-out">0.8</output></label><input type="range" id="cp-sy" min="0.3" max="2.5" step="0.05" value="0.8"></div>
+              <div class="ctrl"><label for="cp-ang"><b>θ</b> <output id="cp-ang-out">45</output></label><input type="range" id="cp-ang" min="0" max="360" step="1" value="45"></div>
+              <div class="ctrl"><label for="cp-tx"><b>Tx</b> <output id="cp-tx-out">3</output></label><input type="range" id="cp-tx" min="-6" max="6" step="0.5" value="3"></div>
+              <div class="ctrl"><label for="cp-ty"><b>Ty</b> <output id="cp-ty-out">2</output></label><input type="range" id="cp-ty" min="-6" max="6" step="0.5" value="2"></div>
+              <button class="btn sm" data-reset="cp">Reset</button>
+              <button class="btn sm primary" id="cp-play">Play all stages</button>
+            </div>
+            <div class="panel">
+              <h4>Matrix at this stage</h4>
+              <div id="cp-matrix"></div>
+              <div class="small muted" style="margin-top:6px" id="cp-label"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">03</span> Order matters</p>
+        <p>Both panels below use the same numbers: <code>Sx = 2</code>, <code>Sy = 1</code>, <code>θ = 45°</code>. Only the order differs, and the results are clearly different shapes.</p>
+        <div class="grid2" style="margin-top:14px">
+          <div class="panel"><h4>Case A — scale, then rotate</h4><div class="graph" id="om-a"></div><div class="eq small" style="text-align:center">M = R · S</div></div>
+          <div class="panel"><h4>Case B — rotate, then scale</h4><div class="graph" id="om-b"></div><div class="eq small" style="text-align:center">M = S · R</div></div>
+        </div>
+        <div class="eqrow" style="justify-content:center;font-size:18px;margin-top:14px"><span style="font-family:var(--mono);font-weight:600">A · B ≠ B · A</span><span class="muted small">in general — matrix multiplication is not commutative</span></div>
+        <div class="note tip"><span class="h">Remember it this way</span>Wearing a jacket and then a backpack is not the same as wearing the backpack and then the jacket. Same two actions, different order, very different result.</div>
+        <div class="teach"><span class="h">Teaching point</span>Rotate-then-translate versus translate-then-rotate is the classic exam trap: <code>T·R ≠ R·T</code>. In the second case the object swings around the origin from its new position, tracing a wide arc. Demonstrate it live in the playground.</div>
+      </div>
+    </section>
+
+    <!-- ==================== 10. MATRIX SUMMARY / REVISION ==================== -->
+    <section class="section" id="summary" data-title="Matrix summary">
+      <div class="block">
+        <p class="eyebrow"><span class="step">Why</span> Why do we need matrices at all?</p>
+        <div class="grid2">
+          <div class="panel"><h4>Without matrices</h4><p class="small" style="margin:0">Every transformation needs its own set of equations and its own code path. Combining a move with a turn means chaining formulas by hand, and there is no single object you can store, invert or send to the GPU.</p></div>
+          <div class="panel"><h4>With matrices</h4><p class="small" style="margin:0">One framework covers translation, rotation, scaling, reflection, shearing <i>and</i> any combination of them. Multiply once, apply to every vertex, invert to undo, and hand the result straight to the graphics pipeline.</p></div>
+        </div>
+        <div class="quote">Matrices give geometric transformations a common mathematical language.</div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">Sheet</span> All homogeneous 3×3 matrices</p>
+        <div class="cheat" id="cheatGrid"></div>
+        <div style="margin-top:16px" class="no-print"><button class="btn primary" id="printBtn">Print this cheat sheet</button></div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">Recall</span> Remember the five transformations</p>
+        <div class="mem">
+          <div class="m"><span class="ico">➡️</span><span class="k">T → Move</span><span class="v">Translation</span></div>
+          <div class="m"><span class="ico">🔄</span><span class="k">R → Turn</span><span class="v">Rotation</span></div>
+          <div class="m"><span class="ico">🔍</span><span class="k">S → Resize</span><span class="v">Scaling</span></div>
+          <div class="m"><span class="ico">🪞</span><span class="k">R → Mirror</span><span class="v">Reflection</span></div>
+          <div class="m"><span class="ico">📐</span><span class="k">Sh → Slant</span><span class="v">Shearing</span></div>
+        </div>
+        <div class="scrollx" style="margin-top:18px">
+          <table class="data">
+            <thead><tr><th>Transformation</th><th>Main effect</th><th>What stays the same</th><th>Parameters</th></tr></thead>
+            <tbody>
+              <tr><td>Translation</td><td class="a">Move</td><td>Size, shape, orientation</td><td>Tx, Ty</td></tr>
+              <tr><td>Rotation</td><td class="a">Turn</td><td>Size and shape</td><td>θ, pivot</td></tr>
+              <tr><td>Scaling</td><td class="a">Resize</td><td>Position of the origin</td><td>Sx, Sy</td></tr>
+              <tr><td>Reflection</td><td class="a">Mirror</td><td>Size and shape (orientation flips)</td><td>Mirror line</td></tr>
+              <tr><td>Shearing</td><td class="a">Slant</td><td>Area</td><td>kx, ky</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">Uses</span> Where each one shows up in real software</p>
+        <div class="grid3">
+          <div class="panel"><h4>Translation</h4><p class="small" style="margin:0">Moving a car across a game screen.</p></div>
+          <div class="panel"><h4>Rotation</h4><p class="small" style="margin:0">Rotating a character or a satellite view.</p></div>
+          <div class="panel"><h4>Scaling</h4><p class="small" style="margin:0">Zooming an image in or out.</p></div>
+          <div class="panel"><h4>Reflection</h4><p class="small" style="margin:0">Creating a mirror or water effect.</p></div>
+          <div class="panel"><h4>Shearing</h4><p class="small" style="margin:0">Slanted italic text and isometric tiles.</p></div>
+          <div class="panel"><h4>Homogeneous coordinates</h4><p class="small" style="margin:0">The transformation stage of every graphics pipeline.</p></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">Traps</span> Six mistakes students actually make</p>
+        <div class="grid2" id="mistakes"></div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">Map</span> The whole topic on one page</p>
+        <div class="map">
+          <div class="root">2D Transformations</div>
+          <div class="stem"></div><div class="rail"></div>
+          <div class="legs"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="row">
+            <div class="node" data-go="translation">Translation<small>move</small></div>
+            <div class="node" data-go="rotation">Rotation<small>turn</small></div>
+            <div class="node" data-go="scaling">Scaling<small>resize</small></div>
+            <div class="node" data-go="reflection">Reflection<small>mirror</small></div>
+            <div class="node" data-go="shearing">Shearing<small>slant</small></div>
+          </div>
+          <div class="legs"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="rail"></div><div class="stem"></div>
+          <div class="root" style="background:var(--blue)" data-go="homogeneous">Homogeneous coordinates</div>
+          <div class="stem"></div>
+          <div class="root" style="background:var(--teal)">3 × 3 matrices</div>
+          <div class="stem"></div>
+          <div class="root" style="background:var(--rose)" data-go="composition">Matrix composition</div>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="eyebrow"><span class="step">Final</span> What should you remember?</p>
+        <ol style="line-height:2;padding-left:20px;margin:0">
+          <li>Translation → move</li>
+          <li>Rotation → turn</li>
+          <li>Scaling → resize</li>
+          <li>Reflection → mirror</li>
+          <li>Shearing → slant</li>
+          <li>Homogeneous coordinates → add a third coordinate equal to 1</li>
+          <li>Transformation matrices → the mathematical representation of all five</li>
+          <li>Matrix multiplication → combines transformations into one matrix</li>
+          <li>Transformation order matters: <code>AB ≠ BA</code></li>
+          <li>Computer graphics uses transformations everywhere, on every frame</li>
+        </ol>
+        <div class="quote" style="border-left-color:var(--rose);margin-top:18px;font-size:19px">If you can visualize the transformation, you can understand the mathematics.</div>
+      </div>
+    </section>
+
+    <!-- ==================== 11. PLAYGROUND ==================== -->
+    <section class="section" id="playground" data-title="Interactive playground">
+      <div class="block">
+        <p class="eyebrow"><span class="step">Lab</span> Transformation playground</p>
+        <p class="small muted">Pick a shape, move every slider, and watch the composite matrix rebuild itself in real time. The dashed blue outline is always the original; the solid rose outline is the result.</p>
+        <div class="lab" style="grid-template-columns:minmax(0,1.35fr) minmax(0,300px)">
+          <div>
+            <div class="graph" id="pg-graph"></div>
+            <div class="legend"><span><i class="g"></i>Original</span><span><i class="a"></i>Transformed</span></div>
+            <div class="scrollx" style="margin-top:14px"><table class="data" id="pg-table"></table></div>
+          </div>
+          <div>
+            <div class="panel">
+              <h4>Object</h4>
+              <div class="chip-row" style="margin-bottom:6px">
+                <button class="chip active" data-shape="triangle">Triangle</button>
+                <button class="chip" data-shape="square">Square</button>
+                <button class="chip" data-shape="rect">Rectangle</button>
+                <button class="chip" data-shape="arrow">Arrow</button>
+                <button class="chip" data-shape="point">Custom point</button>
+              </div>
+              <div id="pg-point-wrap" style="display:none;margin-top:10px" class="grid2">
+                <label class="f small"><span class="muted">x</span><input type="number" id="pg-px" value="2" step="0.5"></label>
+                <label class="f small"><span class="muted">y</span><input type="number" id="pg-py" value="3" step="0.5"></label>
+              </div>
+            </div>
+            <div class="panel">
+              <h4>Translation</h4>
+              <div class="ctrl"><label for="pg-tx"><b>Tx</b> <output id="pg-tx-out">0</output></label><input type="range" id="pg-tx" min="-8" max="8" step="0.5" value="0"></div>
+              <div class="ctrl" style="margin-bottom:0"><label for="pg-ty"><b>Ty</b> <output id="pg-ty-out">0</output></label><input type="range" id="pg-ty" min="-8" max="8" step="0.5" value="0"></div>
+            </div>
+            <div class="panel">
+              <h4>Rotation</h4>
+              <div class="ctrl" style="margin-bottom:0"><label for="pg-ang"><b>θ</b> degrees <output id="pg-ang-out">0</output></label><input type="range" id="pg-ang" min="-180" max="180" step="1" value="0"></div>
+            </div>
+            <div class="panel">
+              <h4>Scaling</h4>
+              <div class="ctrl"><label for="pg-sx"><b>Sx</b> <output id="pg-sx-out">1</output></label><input type="range" id="pg-sx" min="0.25" max="3" step="0.05" value="1"></div>
+              <div class="ctrl" style="margin-bottom:0"><label for="pg-sy"><b>Sy</b> <output id="pg-sy-out">1</output></label><input type="range" id="pg-sy" min="0.25" max="3" step="0.05" value="1"></div>
+            </div>
+            <div class="panel">
+              <h4>Reflection</h4>
+              <div class="chip-row">
+                <button class="chip" data-pgrf="x">X-axis</button>
+                <button class="chip" data-pgrf="y">Y-axis</button>
+                <button class="chip" data-pgrf="o">Origin</button>
+              </div>
+            </div>
+            <div class="panel">
+              <h4>Shearing</h4>
+              <div class="ctrl"><label for="pg-kx"><b>kx</b> <output id="pg-kx-out">0</output></label><input type="range" id="pg-kx" min="-2" max="2" step="0.05" value="0"></div>
+              <div class="ctrl" style="margin-bottom:0"><label for="pg-ky"><b>ky</b> <output id="pg-ky-out">0</output></label><input type="range" id="pg-ky" min="-2" max="2" step="0.05" value="0"></div>
+            </div>
+            <div class="panel">
+              <h4>Composite matrix</h4>
+              <div id="pg-matrix"></div>
+              <div class="small muted" style="margin-top:8px">Applied right to left:<br>M = T · R · S · Sh · F</div>
+            </div>
+            <button class="btn rose" style="width:100%;margin-top:14px" data-reset="pg">Reset everything</button>
+          </div>
+        </div>
+        <div class="teach"><span class="h">Teaching point</span>Set Sx = 2, Sy = 1 and θ = 45°, then set θ back to 0 and reapply in the other order using the composition section. Students see immediately why <code>R·S ≠ S·R</code>.</div>
+      </div>
+    </section>
+
+    <!-- ==================== 12. QUIZ ==================== -->
+    <section class="section" id="quiz" data-title="Quiz">
+      <div class="score no-print">
+        <div><div class="small" style="opacity:.75;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;font-size:11px">Your score</div><div class="n"><span id="qScore">0</span> / 15</div></div>
+        <div class="verdict" id="qVerdict">Answer all fifteen questions to get your verdict.</div>
+        <button class="btn" id="qReset">Restart quiz</button>
+      </div>
+      <div class="block" style="margin-top:16px">
+        <p class="eyebrow"><span class="step">Quiz</span> Fifteen questions on 2D transformations</p>
+        <p class="small muted">Pick one option per question. You get the reason immediately, right or wrong.</p>
+      </div>
+      <div id="quizList" style="margin-top:16px"></div>
+      <div class="block" id="qFinal" style="margin-top:16px;display:none"></div>
+    </section>
+
+    </main>
+  </div>
+</div>
+
+<div id="presentBar" role="toolbar" aria-label="Presentation controls">
+  <button class="btn sm" id="pPrev">‹ Prev</button>
+  <span class="t" id="pTitle">Overview</span>
+  <button class="btn sm" id="pNext">Next ›</button>
+  <button class="btn sm" id="pExit">Exit</button>
+</div>
+
+<script>
+/* ============================================================================
+   2D TRANSFORMATIONS — INTERACTIVE DASHBOARD
+   Vanilla JS. No build step, no dependencies.
+   Sections: core helpers → SVG graph engine → matrix maths → UI shell →
+             lesson modules → playground → quiz.
+   ============================================================================ */
+(function(){
+"use strict";
+
+/* ---------------------------------------------------------------- helpers */
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.prototype.slice.call((r||document).querySelectorAll(s));
+const SVGNS = "http://www.w3.org/2000/svg";
+const LET = "ABCDEFGH".split("");
+const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Round for display: 2 decimals max, no trailing zeros, no negative zero. */
+function fmt(n,d){
+  d = (d===undefined) ? 2 : d;
+  if(Math.abs(n) < 1e-9) n = 0;
+  let s = Number(n.toFixed(d)).toString();
+  return s === "-0" ? "0" : s;
+}
+const fmtP = p => "(" + fmt(p[0]) + ", " + fmt(p[1]) + ")";
+const rad  = d => d * Math.PI / 180;
+
+/** Eased animation loop that respects reduced-motion preferences. */
+function animate(dur, step, done){
+  if(REDUCED){ step(1); if(done) done(); return; }
+  const t0 = performance.now();
+  (function frame(t){
+    const raw = Math.min(1, (t - t0) / dur);
+    const p = raw < .5 ? 2*raw*raw : 1 - Math.pow(-2*raw + 2, 2)/2;
+    step(p);
+    if(raw < 1) requestAnimationFrame(frame); else if(done) done();
+  })(performance.now());
+}
+
+/* ------------------------------------------------------------ matrix maths */
+const I = () => [[1,0,0],[0,1,0],[0,0,1]];
+/** 3x3 multiply: result = A · B */
+function mul(A,B){
+  const R = [[0,0,0],[0,0,0],[0,0,0]];
+  for(let i=0;i<3;i++) for(let j=0;j<3;j++){
+    let s = 0; for(let k=0;k<3;k++) s += A[i][k]*B[k][j];
+    R[i][j] = s;
+  }
+  return R;
+}
+/** Multiply a chain of matrices left to right: mulAll(T,R,S) = T·R·S */
+const mulAll = (...ms) => ms.reduce((a,b)=>mul(a,b), I());
+/** Apply a homogeneous matrix to a Cartesian point. */
+function apply(M,p){
+  return [ M[0][0]*p[0] + M[0][1]*p[1] + M[0][2],
+           M[1][0]*p[0] + M[1][1]*p[1] + M[1][2] ];
+}
+const matT  = (tx,ty) => [[1,0,tx],[0,1,ty],[0,0,1]];
+const matS  = (sx,sy) => [[sx,0,0],[0,sy,0],[0,0,1]];
+const matSh = (kx,ky) => [[1,kx,0],[ky,1,0],[0,0,1]];
+function matR(deg){
+  const c = Math.cos(rad(deg)), s = Math.sin(rad(deg));
+  return [[c,-s,0],[s,c,0],[0,0,1]];
+}
+function matRef(kind){
+  if(kind==="x") return [[1,0,0],[0,-1,0],[0,0,1]];
+  if(kind==="y") return [[-1,0,0],[0,1,0],[0,0,1]];
+  if(kind==="o") return [[-1,0,0],[0,-1,0],[0,0,1]];
+  if(kind==="d") return [[0,1,0],[1,0,0],[0,0,1]];   // about the line y = x
+  return I();
+}
+/** Wrap any matrix so it acts about the point (cx, cy) instead of the origin. */
+const about = (M,cx,cy) => mulAll(matT(cx,cy), M, matT(-cx,-cy));
+
+/* --------------------------------------------------- matrix HTML rendering */
+/** cells: array of rows of strings. opts.hi = [[r,c],...] cells to highlight. */
+function matrixHTML(cells, opts){
+  opts = opts || {};
+  const hi = opts.hi || [], hi2 = opts.hi2 || [];
+  let h = '<div class="matrix' + (opts.sm ? " sm" : "") + '" style="--cols:' + cells[0].length + '"' +
+          (opts.id ? ' id="' + opts.id + '"' : "") + ">";
+  cells.forEach((row,i)=> row.forEach((v,j)=>{
+    let cls = "mcell";
+    if(hi.some(c=>c[0]===i&&c[1]===j))  cls += " hi";
+    if(hi2.some(c=>c[0]===i&&c[1]===j)) cls += " hi2";
+    h += '<span class="' + cls + '" data-rc="' + i + j + '">' + v + "</span>";
+  }));
+  return h + "</div>";
+}
+/** Numeric matrix → string cells. */
+const numCells = M => M.map(r=>r.map(v=>fmt(v)));
+const lbl = t => '<span style="font-family:var(--mono);font-size:15px">' + t + "</span>";
+const op  = t => '<span class="op">' + t + "</span>";
+
+/* ============================================================================
+   SVG GRAPH ENGINE
+   World coordinates (maths) are mapped onto a fixed square viewBox.
+   ========================================================================== */
+let uid = 0;
+function mk(tag, attrs, parent){
+  const e = document.createElementNS(SVGNS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+
+class Graph{
+  constructor(host, opts){
+    opts = opts || {};
+    this.host      = (typeof host === "string") ? $(host) : host;
+    this.range     = opts.range || 8;          // world units from centre to edge
+    this.labelStep = opts.labelStep || 2;
+    this.size      = 500;                      // viewBox units
+    this.unit      = this.size / (2*this.range);
+    this.id        = ++uid;
+
+    const svg = mk("svg", {viewBox:"0 0 "+this.size+" "+this.size, class:"gsvg",
+                           role:"img", "aria-label":"Coordinate grid"});
+    this.host.innerHTML = "";
+    this.host.appendChild(svg);
+    this.svg = svg;
+
+    const defs = mk("defs", {}, svg);
+    [["blue","#2457E6"],["rose","#D6215F"],["amber","#B0660A"],["teal","#0E8F84"],["axis","#43536E"]]
+      .forEach(([n,c])=>{
+        const m = mk("marker",{id:"ar"+this.id+n, viewBox:"0 0 10 10", refX:"9", refY:"5",
+                               markerWidth:"6", markerHeight:"6", orient:"auto-start-reverse"}, defs);
+        mk("path",{d:"M0,0 L10,5 L0,10 z", fill:c}, m);
+      });
+
+    this.gGrid   = mk("g",{class:"g-grid"},svg);
+    this.gAxes   = mk("g",{class:"g-axes"},svg);
+    this.layers  = {};
+    ["static","ghost","main","overlay"].forEach(n=> this.layers[n] = mk("g",{},svg));
+    this.drawGrid();
+  }
+  /* world → viewBox */
+  X(x){ return this.size/2 + x*this.unit; }
+  Y(y){ return this.size/2 - y*this.unit; }
+
+  drawGrid(){
+    const r = this.range, S = this.size;
+    for(let i=-r; i<=r; i++){
+      const major = (i % this.labelStep === 0);
+      mk("line",{x1:this.X(i),y1:0,x2:this.X(i),y2:S, class: major?"major":""}, this.gGrid);
+      mk("line",{x1:0,y1:this.Y(i),x2:S,y2:this.Y(i), class: major?"major":""}, this.gGrid);
+    }
+    // axes with arrowheads
+    mk("line",{x1:6,y1:this.Y(0),x2:S-4,y2:this.Y(0),
+               "marker-end":"url(#ar"+this.id+"axis)","marker-start":"url(#ar"+this.id+"axis)"}, this.gAxes);
+    mk("line",{x1:this.X(0),y1:S-6,x2:this.X(0),y2:4,
+               "marker-end":"url(#ar"+this.id+"axis)","marker-start":"url(#ar"+this.id+"axis)"}, this.gAxes);
+    mk("text",{x:S-16,y:this.Y(0)-10,class:"axname","text-anchor":"end"}, this.gAxes).textContent = "+x";
+    mk("text",{x:this.X(0)+10,y:16,class:"axname"}, this.gAxes).textContent = "+y";
+    // ticks
+    for(let i=-r; i<=r; i++){
+      if(i === 0 || i % this.labelStep !== 0) continue;
+      const tx = mk("text",{x:this.X(i),y:this.Y(0)+15,class:"tick","text-anchor":"middle"}, this.gAxes);
+      tx.textContent = i;
+      const ty = mk("text",{x:this.X(0)-7,y:this.Y(i)+4,class:"tick","text-anchor":"end"}, this.gAxes);
+      ty.textContent = i;
+    }
+    const o = mk("text",{x:this.X(0)-7,y:this.Y(0)+15,class:"tick","text-anchor":"end"}, this.gAxes);
+    o.textContent = "O";
+  }
+
+  clear(layer){
+    const g = this.layers[layer];
+    while(g.firstChild) g.removeChild(g.firstChild);
+  }
+  clearAll(){ Object.keys(this.layers).forEach(k=>this.clear(k)); }
+
+  poly(pts, cls, layer){
+    const d = pts.map(p=>this.X(p[0])+","+this.Y(p[1])).join(" ");
+    return mk(pts.length>2 ? "polygon" : "polyline", {points:d, class:cls}, this.layers[layer||"main"]);
+  }
+  dot(x,y,cls,layer,r){
+    return mk("circle",{cx:this.X(x),cy:this.Y(y),r:r||4.5,class:cls}, this.layers[layer||"main"]);
+  }
+  label(x,y,text,cls,layer,dx,dy){
+    let ox = (dx===undefined) ? 9 : dx;
+    let oy = (dy===undefined) ? -9 : dy;
+    let px = this.X(x) + ox, py = this.Y(y) + oy;
+    let anchor = "start";
+    // keep labels inside the viewBox: flip side near the right edge, drop below near the top
+    if(px > this.size - 12 - text.length*6.4){ anchor = "end"; px = this.X(x) - Math.abs(ox); }
+    if(px < 6){ anchor = "start"; px = 6; }
+    if(py < 13) py = this.Y(y) + 17;
+    if(py > this.size - 6) py = this.size - 6;
+    const t = mk("text",{x:px, y:py, "text-anchor":anchor, class:"vlabel "+(cls||"")},
+                 this.layers[layer||"main"]);
+    t.textContent = text;
+    return t;
+  }
+  seg(x1,y1,x2,y2,cls,layer){
+    return mk("line",{x1:this.X(x1),y1:this.Y(y1),x2:this.X(x2),y2:this.Y(y2),class:cls},
+                     this.layers[layer||"overlay"]);
+  }
+  arrow(x1,y1,x2,y2,color,layer){
+    const l = this.seg(x1,y1,x2,y2,"helper",layer);
+    l.setAttribute("marker-end","url(#ar"+this.id+(color||"amber")+")");
+    return l;
+  }
+  /** Arc from angle a1 to a2 (degrees) around (cx,cy) at world radius rr. */
+  arc(cx,cy,rr,a1,a2,layer){
+    const p1 = [cx + rr*Math.cos(rad(a1)), cy + rr*Math.sin(rad(a1))];
+    const p2 = [cx + rr*Math.cos(rad(a2)), cy + rr*Math.sin(rad(a2))];
+    const large = Math.abs(a2-a1) > 180 ? 1 : 0;
+    const sweep = (a2 > a1) ? 0 : 1;             // screen y is flipped
+    const R = rr*this.unit;
+    const d = "M"+this.X(p1[0])+","+this.Y(p1[1])+" A"+R+","+R+" 0 "+large+" "+sweep+" "+
+              this.X(p2[0])+","+this.Y(p2[1]);
+    const path = mk("path",{d:d, class:"arcline"}, this.layers[layer||"overlay"]);
+    path.setAttribute("marker-end","url(#ar"+this.id+"amber)");
+    return path;
+  }
+  /** Convert a pointer event into snapped world coordinates. */
+  toWorld(evt){
+    const r = this.svg.getBoundingClientRect();
+    const sx = (evt.clientX - r.left) * (this.size / r.width);
+    const sy = (evt.clientY - r.top)  * (this.size / r.height);
+    const wx = (sx - this.size/2) / this.unit;
+    const wy = (this.size/2 - sy) / this.unit;
+    return [Math.round(wx*2)/2, Math.round(wy*2)/2];
+  }
+  onPick(cb){
+    this.svg.style.cursor = "crosshair";
+    this.svg.addEventListener("click", e => cb(this.toWorld(e)));
+  }
+}
+
+/* ------------------------------------------------- shared drawing routines */
+const SHAPES = {
+  triangle:[[1,1],[4,1],[2.5,3.5]],
+  square:  [[1,1],[3,1],[3,3],[1,3]],
+  rect:    [[1,1],[4.5,1],[4.5,2.5],[1,2.5]],
+  arrow:   [[0,0.5],[2.5,0.5],[2.5,1.6],[4.6,0],[2.5,-1.6],[2.5,-0.5],[0,-0.5]],
+  point:   [[2,3]]
+};
+
+/**
+ * Draw an original (ghost) shape and its transformed version.
+ * Returns the transformed vertex list.
+ */
+function scene(g, shape, M, opts){
+  opts = opts || {};
+  g.clear("ghost"); g.clear("main");
+  const after = shape.map(p=>apply(M,p));
+  const single = shape.length === 1;
+
+  if(opts.ghost !== false){
+    if(!single) g.poly(shape, "sh-ghost", "ghost");
+    shape.forEach((p,i)=>{
+      g.dot(p[0],p[1],"dot-ghost","ghost", single?6:4.5);
+      if(opts.labels !== false) g.label(p[0],p[1],(single?"P":LET[i])+fmtP(p),"g","ghost");
+    });
+  }
+  if(!single) g.poly(after, "sh-after", "main");
+  after.forEach((p,i)=>{
+    g.dot(p[0],p[1],"dot-after","main", single?6:4.5);
+    if(opts.labels !== false) g.label(p[0],p[1],(single?"P'":LET[i]+"'")+fmtP(p),"a","main");
+  });
+  return after;
+}
+
+/** Build a before/after coordinate table. */
+function coordTable(el, before, after, headAfter){
+  let h = "<thead><tr><th>Vertex</th><th>Before (x, y)</th><th>" +
+          (headAfter || "After (x', y')") + "</th></tr></thead><tbody>";
+  before.forEach((p,i)=>{
+    const q = after[i];
+    h += "<tr><td>" + (before.length===1 ? "P" : LET[i]) + "</td>" +
+         '<td class="b">' + fmtP(p) + "</td>" +
+         '<td class="a">' + fmtP(q) + "</td></tr>";
+  });
+  el.innerHTML = h + "</tbody>";
+}
+
+/** Centroid of a vertex list. */
+function centroid(pts){
+  const s = pts.reduce((a,p)=>[a[0]+p[0], a[1]+p[1]], [0,0]);
+  return [s[0]/pts.length, s[1]/pts.length];
+}
+
+/* ============================================================================
+   UI SHELL — navigation, progress, teacher mode, presentation mode
+   ========================================================================== */
+const SECTION_ELS = $$(".section");
+const IDS = SECTION_ELS.map(s=>s.id);
+const TITLES = SECTION_ELS.map(s=>s.dataset.title);
+const visited = new Set();
+const RESET = {};                                  // reset handlers by key
+
+const navEl = $("#nav");
+IDS.forEach((id,i)=>{
+  const b = document.createElement("button");
+  b.type = "button"; b.dataset.go = id;
+  b.innerHTML = '<span class="n">' + (i+1) + "</span><span>" + TITLES[i] + "</span>";
+  navEl.appendChild(b);
+});
+
+function goTo(id, skipScroll){
+  if(IDS.indexOf(id) < 0) return;
+  SECTION_ELS.forEach(s=> s.classList.toggle("active", s.id === id));
+  $$("#nav button").forEach(b=> b.classList.toggle("active", b.dataset.go === id));
+  visited.add(id);
+  $$("#nav button").forEach(b=> b.classList.toggle("done", visited.has(b.dataset.go)));
+  const pct = Math.round(visited.size / IDS.length * 100);
+  $("#progPct").textContent = pct + "%";
+  $("#progBar").style.width = pct + "%";
+  $("#pTitle").textContent = TITLES[IDS.indexOf(id)];
+  if(!skipScroll) window.scrollTo({top:0, behavior: REDUCED ? "auto" : "smooth"});
+  if(typeof onSectionShown === "function") onSectionShown(id);
+}
+
+/* One delegated listener covers nav, cards, concept-map nodes and footer links. */
+document.addEventListener("click", e=>{
+  const go = e.target.closest("[data-go]");
+  if(go){ goTo(go.dataset.go); return; }
+  const rs = e.target.closest("[data-reset]");
+  if(rs && RESET[rs.dataset.reset]){ RESET[rs.dataset.reset](); }
+});
+
+/* Prev / next footer navigation, generated for every section. */
+SECTION_ELS.forEach((sec,i)=>{
+  const nav = document.createElement("div");
+  nav.className = "secnav";
+  nav.innerHTML =
+    (i>0 ? '<button class="btn" data-go="'+IDS[i-1]+'">‹ '+TITLES[i-1]+'</button>' : "<span></span>") +
+    (i<IDS.length-1 ? '<button class="btn primary" data-go="'+IDS[i+1]+'">'+TITLES[i+1]+' ›</button>' : "<span></span>");
+  sec.appendChild(nav);
+});
+
+/* Teacher mode */
+$("#teacherBtn").addEventListener("click", function(){
+  const on = document.body.classList.toggle("teacher-on");
+  this.classList.toggle("on", on);
+  this.setAttribute("aria-pressed", on);
+  this.textContent = on ? "Teacher mode: on" : "Teacher mode";
+});
+
+/* Presentation mode */
+function setPresent(on){
+  document.body.classList.toggle("present", on);
+  const b = $("#presentBtn");
+  b.classList.toggle("on", on);
+  b.classList.toggle("present-on", on);
+  b.setAttribute("aria-pressed", on);
+  b.textContent = on ? "Presentation mode: on" : "Presentation mode";
+}
+$("#presentBtn").addEventListener("click", ()=> setPresent(!document.body.classList.contains("present")));
+$("#pExit").addEventListener("click", ()=> setPresent(false));
+$("#pPrev").addEventListener("click", ()=>{
+  const i = IDS.indexOf($(".section.active").id); if(i>0) goTo(IDS[i-1]);
+});
+$("#pNext").addEventListener("click", ()=>{
+  const i = IDS.indexOf($(".section.active").id); if(i<IDS.length-1) goTo(IDS[i+1]);
+});
+document.addEventListener("keydown", e=>{
+  if(!document.body.classList.contains("present")) return;
+  if(e.target.matches("input,select,textarea")) return;
+  if(e.key === "ArrowRight") $("#pNext").click();
+  if(e.key === "ArrowLeft")  $("#pPrev").click();
+  if(e.key === "Escape")     setPresent(false);
+});
+
+/* Slider plumbing: keep the <output> in sync and call the redraw callback. */
+function wire(ids, cb){
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.dataset.def = el.value;
+    const out = document.getElementById(id + "-out");
+    const sync = ()=>{ if(out) out.textContent = fmt(Number(el.value)); };
+    sync();
+    el.addEventListener("input", ()=>{ sync(); cb(); });
+    el.addEventListener("change", ()=>{ sync(); cb(); });
+  });
+}
+function restore(ids){
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el || el.dataset.def === undefined) return;
+    el.value = el.dataset.def;
+    const out = document.getElementById(id + "-out");
+    if(out) out.textContent = fmt(Number(el.value));
+  });
+}
+/** Chip button group: keeps one active, reports the chosen value. */
+function chips(sel, attr, cb){
+  const group = $$(sel);
+  group.forEach(b=> b.addEventListener("click", ()=>{
+    group.forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    cb(b.getAttribute(attr), b);
+  }));
+  return group;
+}
+const val = id => Number(document.getElementById(id).value);
+
+/* ============================================================================
+   LESSON 2 — COORDINATE SYSTEM
+   ========================================================================== */
+const coG = new Graph("#co-graph", {range:8});
+let coPt = [3,2];
+function coRender(){
+  coG.clear("main"); coG.clear("overlay");
+  const [x,y] = coPt;
+  if(x!==0) coG.seg(x,0,x,y,"helper-dash","overlay");
+  if(y!==0) coG.seg(0,y,x,y,"helper-dash","overlay");
+  coG.dot(x,y,"dot-after","main",7);
+  coG.label(x,y,"P("+fmt(x)+", "+fmt(y)+")","a","main");
+  $("#co-read").textContent = "P(" + fmt(x) + ", " + fmt(y) + ")";
+  $("#co-desc").textContent = fmt(Math.abs(x)) + " units along " + (x<0?"−x":"+x") +
+                              ", then " + fmt(Math.abs(y)) + " units along " + (y<0?"−y":"+y") + ".";
+  let q;
+  if(x===0 && y===0) q = "The origin itself — O(0, 0)";
+  else if(x===0)     q = "On the y-axis — x is zero";
+  else if(y===0)     q = "On the x-axis — y is zero";
+  else if(x>0&&y>0)  q = "Quadrant I — x positive, y positive";
+  else if(x<0&&y>0)  q = "Quadrant II — x negative, y positive";
+  else if(x<0&&y<0)  q = "Quadrant III — x negative, y negative";
+  else               q = "Quadrant IV — x positive, y negative";
+  $("#co-quad").textContent = q;
+}
+coG.onPick(p=>{ coPt = p; coRender(); });
+RESET.co = ()=>{ coPt = [3,2]; coRender(); };
+coRender();
+
+/* ============================================================================
+   LESSON 3 — TRANSLATION
+   ========================================================================== */
+const trG = new Graph("#tr-graph", {range:8});
+const TR_SHAPE = SHAPES.triangle;
+const TR_IDS = ["tr-tx","tr-ty"];
+
+function trDraw(tx,ty){
+  const M = matT(tx,ty);
+  const after = scene(trG, TR_SHAPE, M);
+  trG.clear("overlay");
+  const c = centroid(TR_SHAPE);
+  if(Math.abs(tx) > 0.01){
+    trG.arrow(c[0],c[1],c[0]+tx,c[1],"amber","overlay");
+    trG.label(c[0]+tx/2, c[1], "Tx = "+fmt(tx), "h", "overlay", 0, -8);
+  }
+  if(Math.abs(ty) > 0.01){
+    trG.arrow(c[0]+tx,c[1],c[0]+tx,c[1]+ty,"amber","overlay");
+    trG.label(c[0]+tx, c[1]+ty/2, "Ty = "+fmt(ty), "h", "overlay", 8, 4);
+  }
+  $("#tr-matrix").innerHTML = matrixHTML(
+    [["1","0",fmt(tx)],["0","1",fmt(ty)],["0","0","1"]], {hi:[[0,2],[1,2]], sm:true});
+  coordTable($("#tr-table"), TR_SHAPE, after);
+}
+const trUpdate = ()=> trDraw(val("tr-tx"), val("tr-ty"));
+wire(TR_IDS, trUpdate);
+chips('[data-tr]', "data-tr", v=>{
+  const [a,b] = v.split(",").map(Number);
+  document.getElementById("tr-tx").value = a;
+  document.getElementById("tr-ty").value = b;
+  $("#tr-tx-out").textContent = fmt(a); $("#tr-ty-out").textContent = fmt(b);
+  trUpdate();
+});
+RESET.tr = ()=>{ restore(TR_IDS); trUpdate(); };
+$("#tr-play").addEventListener("click", ()=>{
+  const tx = val("tr-tx"), ty = val("tr-ty");
+  animate(1100, p=> trDraw(tx*p, ty*p), trUpdate);
+});
+trUpdate();
+
+/* static equations */
+$("#tr-eq2").innerHTML =
+  matrixHTML([["x'"],["y'"]]) + op("=") + matrixHTML([["x"],["y"]]) + op("+") +
+  matrixHTML([["Tx"],["Ty"]], {hi:[[0,0],[1,0]]});
+$("#tr-eq3").innerHTML =
+  matrixHTML([["x'"],["y'"],["1"]]) + op("=") +
+  matrixHTML([["1","0","Tx"],["0","1","Ty"],["0","0","1"]], {hi:[[0,2],[1,2]]}) +
+  matrixHTML([["x"],["y"],["1"]]);
+
+/* worked example: P(2,3) → P'(6,5) */
+const trExG = new Graph("#tr-ex-graph", {range:8});
+function trExDraw(t){
+  trExG.clearAll();
+  const a = [2,3], b = [6,5];
+  const p = [a[0] + (b[0]-a[0])*t, a[1] + (b[1]-a[1])*t];
+  trExG.dot(2,3,"dot-ghost","ghost",6);
+  trExG.label(2,3,"P(2, 3)","g","ghost");
+  trExG.seg(2,3,6,5,"helper-dash","overlay");
+  trExG.dot(p[0],p[1],"dot-after","main",7);
+  trExG.label(p[0],p[1],"P'("+fmt(p[0])+", "+fmt(p[1])+")","a","main");
+}
+trExDraw(1);
+$("#tr-ex-play").addEventListener("click", ()=> animate(1400, trExDraw));
+
+/* ============================================================================
+   LESSON 4 — ROTATION
+   ========================================================================== */
+const roG = new Graph("#ro-graph", {range:8});
+const RO_SHAPE = SHAPES.triangle;
+let roDir = 1, roCen = [0,0], roCenMode = "0,0";
+
+function roCentre(){
+  return roCenMode === "c" ? centroid(RO_SHAPE) : roCen;
+}
+function roDraw(angDeg){
+  const c = roCentre(), th = roDir * angDeg;
+  const M = about(matR(th), c[0], c[1]);
+  const after = scene(roG, RO_SHAPE, M);
+  roG.clear("overlay");
+  roG.dot(c[0],c[1],"dot-mark","overlay",5);
+  roG.label(c[0],c[1],"pivot","t","overlay",8,16);
+  const a = RO_SHAPE[0], r = Math.hypot(a[0]-c[0], a[1]-c[1]);
+  if(r > 0.2){
+    const a0 = Math.atan2(a[1]-c[1], a[0]-c[0]) * 180/Math.PI;
+    roG.seg(c[0],c[1],a[0],a[1],"helper-dash","overlay");
+    roG.seg(c[0],c[1],after[0][0],after[0][1],"helper-dash","overlay");
+    if(Math.abs(th) > 1) roG.arc(c[0],c[1], Math.min(r*0.62, 2.6), a0, a0+th, "overlay");
+    const midA = rad(a0 + th/2), rr = Math.min(r*0.62, 2.6) + 0.5;
+    roG.label(c[0]+rr*Math.cos(midA), c[1]+rr*Math.sin(midA), "θ = "+fmt(th)+"°","h","overlay",0,0);
+  }
+  const cc = Math.cos(rad(th)), ss = Math.sin(rad(th));
+  $("#ro-matrix").innerHTML = matrixHTML(
+    [[fmt(cc,3), fmt(-ss,3), "0"],[fmt(ss,3), fmt(cc,3), "0"],["0","0","1"]],
+    {hi:[[0,0],[0,1],[1,0],[1,1]], sm:true});
+  $("#ro-vals").innerHTML = "cos θ = " + fmt(cc,3) + " &nbsp; sin θ = " + fmt(ss,3) +
+    " &nbsp;·&nbsp; " + (roDir>0 ? "counter-clockwise" : "clockwise");
+  coordTable($("#ro-table"), RO_SHAPE, after);
+}
+const roUpdate = ()=> roDraw(val("ro-ang"));
+wire(["ro-ang"], roUpdate);
+chips('[data-ang]', "data-ang", v=>{
+  document.getElementById("ro-ang").value = v;
+  $("#ro-ang-out").textContent = v;
+  roUpdate();
+});
+chips('[data-dir]', "data-dir", v=>{ roDir = Number(v); roUpdate(); });
+chips('[data-cen]', "data-cen", v=>{
+  roCenMode = v;
+  if(v !== "c") roCen = v.split(",").map(Number);
+  roUpdate();
+});
+RESET.ro = ()=>{
+  restore(["ro-ang"]); roDir = 1; roCenMode = "0,0"; roCen = [0,0];
+  $$('[data-dir]').forEach((b,i)=> b.classList.toggle("active", i===0));
+  $$('[data-cen]').forEach((b,i)=> b.classList.toggle("active", i===0));
+  roUpdate();
+};
+$("#ro-play").addEventListener("click", ()=>{
+  const a = val("ro-ang");
+  animate(1400, p=> roDraw(a*p), roUpdate);
+});
+roUpdate();
+
+$("#ro-eq2").innerHTML =
+  matrixHTML([["x'"],["y'"]]) + op("=") +
+  matrixHTML([["cos θ","−sin θ"],["sin θ","cos θ"]], {hi:[[0,1]]}) +
+  matrixHTML([["x"],["y"]]);
+$("#ro-eq3").innerHTML =
+  matrixHTML([["x'"],["y'"],["1"]]) + op("=") +
+  matrixHTML([["cos θ","−sin θ","0"],["sin θ","cos θ","0"],["0","0","1"]],
+             {hi2:[[0,0],[0,1],[1,0],[1,1]]}) +
+  matrixHTML([["x"],["y"],["1"]]);
+
+/* worked example: P(2,1) rotated 90° */
+const roExG = new Graph("#ro-ex-graph", {range:6, labelStep:2});
+function roExDraw(t){
+  roExG.clearAll();
+  const a = [2,1];
+  const th = 90*t, p = apply(matR(th), a);
+  roExG.dot(2,1,"dot-ghost","ghost",6);
+  roExG.label(2,1,"P(2, 1)","g","ghost");
+  roExG.seg(0,0,2,1,"helper-dash","overlay");
+  roExG.seg(0,0,p[0],p[1],"helper-dash","overlay");
+  if(th > 1) roExG.arc(0,0,1.5, Math.atan2(1,2)*180/Math.PI, Math.atan2(1,2)*180/Math.PI + th, "overlay");
+  roExG.dot(p[0],p[1],"dot-after","main",7);
+  roExG.label(p[0],p[1],"P'("+fmt(p[0])+", "+fmt(p[1])+")","a","main");
+}
+roExDraw(1);
+$("#ro-ex-play").addEventListener("click", ()=> animate(1500, roExDraw));
+
+/* ============================================================================
+   LESSON 5 — SCALING
+   ========================================================================== */
+const scG = new Graph("#sc-graph", {range:8});
+const SC_SHAPE = SHAPES.rect;
+const SC_IDS = ["sc-sx","sc-sy"];
+
+function scDraw(sx,sy){
+  const after = scene(scG, SC_SHAPE, matS(sx,sy));
+  scG.clear("overlay");
+  const w0 = 4.5 - 1, h0 = 2.5 - 1;
+  scG.arrow(0, 0.4, 4.5*sx, 0.4, "amber", "overlay");
+  scG.label(4.5*sx/2, 0.4, "width × " + fmt(sx), "h", "overlay", 0, -8);
+  scG.arrow(0.4, 0, 0.4, 2.5*sy, "amber", "overlay");
+  scG.label(0.4, 2.5*sy/2, "height × " + fmt(sy), "h", "overlay", 8, 0);
+  $("#sc-matrix").innerHTML = matrixHTML(
+    [[fmt(sx),"0","0"],["0",fmt(sy),"0"],["0","0","1"]], {hi:[[0,0],[1,1]], sm:true});
+  const uni = Math.abs(sx-sy) < 0.001;
+  $("#sc-kind").innerHTML = uni
+    ? '<span class="tag b">Uniform</span> Sx = Sy — proportions are preserved.'
+    : '<span class="tag r">Non-uniform</span> Sx ≠ Sy — the shape is stretched.';
+  coordTable($("#sc-table"), SC_SHAPE, after);
+}
+const scUpdate = ()=> scDraw(val("sc-sx"), val("sc-sy"));
+wire(SC_IDS, scUpdate);
+chips('[data-sc]', "data-sc", v=>{
+  document.getElementById("sc-sx").value = v;
+  document.getElementById("sc-sy").value = v;
+  $("#sc-sx-out").textContent = v; $("#sc-sy-out").textContent = v;
+  scUpdate();
+});
+RESET.sc = ()=>{ restore(SC_IDS); scUpdate(); };
+$("#sc-play").addEventListener("click", ()=>{
+  const sx = val("sc-sx"), sy = val("sc-sy");
+  animate(1100, p=> scDraw(1 + (sx-1)*p, 1 + (sy-1)*p), scUpdate);
+});
+scUpdate();
+
+$("#sc-eq2").innerHTML =
+  matrixHTML([["x'"],["y'"]]) + op("=") +
+  matrixHTML([["Sx","0"],["0","Sy"]], {hi:[[0,0],[1,1]]}) + matrixHTML([["x"],["y"]]);
+$("#sc-eq3").innerHTML =
+  matrixHTML([["x'"],["y'"],["1"]]) + op("=") +
+  matrixHTML([["Sx","0","0"],["0","Sy","0"],["0","0","1"]], {hi:[[0,0],[1,1]]}) +
+  matrixHTML([["x"],["y"],["1"]]);
+
+/* ============================================================================
+   LESSON 6 — REFLECTION
+   ========================================================================== */
+const rfG = new Graph("#rf-graph", {range:8});
+const RF_SHAPE = [[1,1],[4,1.5],[2,4]];
+let rfKind = "x";
+const RF_RULES = {
+  x:"x' = x, y' = −y — the mirror is the x-axis.",
+  y:"x' = −x, y' = y — the mirror is the y-axis.",
+  o:"x' = −x, y' = −y — every point flips through the origin.",
+  d:"x' = y, y' = x — the coordinates simply swap."
+};
+function rfMirrorLine(){
+  rfG.clear("overlay");
+  const r = rfG.range;
+  if(rfKind === "x") rfG.seg(-r,0,r,0,"mirror","overlay");
+  if(rfKind === "y") rfG.seg(0,-r,0,r,"mirror","overlay");
+  if(rfKind === "d") rfG.seg(-r,-r,r,r,"mirror","overlay");
+  if(rfKind === "o"){ rfG.dot(0,0,"dot-mark","overlay",6); rfG.label(0,0,"mirror point","t","overlay",10,18); }
+}
+function rfDraw(t){
+  t = (t === undefined) ? 1 : t;
+  const M = matRef(rfKind);
+  const target = RF_SHAPE.map(p=>apply(M,p));
+  const shown = RF_SHAPE.map((p,i)=>[p[0]+(target[i][0]-p[0])*t, p[1]+(target[i][1]-p[1])*t]);
+  rfG.clear("ghost"); rfG.clear("main");
+  rfG.poly(RF_SHAPE,"sh-ghost","ghost");
+  RF_SHAPE.forEach((p,i)=>{ rfG.dot(p[0],p[1],"dot-ghost","ghost"); rfG.label(p[0],p[1],LET[i]+fmtP(p),"g","ghost"); });
+  rfG.poly(shown,"sh-after","main");
+  shown.forEach((p,i)=>{ rfG.dot(p[0],p[1],"dot-after","main"); rfG.label(p[0],p[1],LET[i]+"'"+fmtP(p),"a","main"); });
+  rfMirrorLine();
+  $("#rf-matrix").innerHTML = matrixHTML(numCells(M), {hi:[[0,0],[0,1],[1,0],[1,1]], sm:true});
+  $("#rf-rule").textContent = RF_RULES[rfKind];
+  coordTable($("#rf-table"), RF_SHAPE, target);
+}
+chips('[data-rf]', "data-rf", v=>{ rfKind = v; rfDraw(1); });
+RESET.rf = ()=>{
+  rfKind = "x";
+  $$('[data-rf]').forEach((b,i)=> b.classList.toggle("active", i===0));
+  rfDraw(1);
+};
+$("#rf-play").addEventListener("click", ()=> animate(1200, rfDraw, ()=>rfDraw(1)));
+rfDraw(1);
+$("#rf-m1").innerHTML = matrixHTML([["1","0","0"],["0","−1","0"],["0","0","1"]], {sm:true, hi:[[1,1]]});
+$("#rf-m2").innerHTML = matrixHTML([["−1","0","0"],["0","1","0"],["0","0","1"]], {sm:true, hi:[[0,0]]});
+$("#rf-m3").innerHTML = matrixHTML([["−1","0","0"],["0","−1","0"],["0","0","1"]], {sm:true, hi:[[0,0],[1,1]]});
+
+/* ============================================================================
+   LESSON 7 — SHEARING
+   ========================================================================== */
+const srG = new Graph("#sr-graph", {range:8});
+const SR_SHAPE = SHAPES.square;
+let srMode = "x";
+
+function srDraw(kx,ky){
+  const M = matSh(kx,ky);
+  const after = scene(srG, SR_SHAPE, M);
+  srG.clear("overlay");
+  SR_SHAPE.forEach((p,i)=>{
+    const q = after[i];
+    if(Math.hypot(q[0]-p[0], q[1]-p[1]) > 0.15) srG.arrow(p[0],p[1],q[0],q[1],"amber","overlay");
+  });
+  $("#sr-matrix").innerHTML = matrixHTML(
+    [["1",fmt(kx),"0"],[fmt(ky),"1","0"],["0","0","1"]],
+    {hi: srMode==="y" ? [[1,0]] : (srMode==="x" ? [[0,1]] : [[0,1],[1,0]]), sm:true});
+  $("#sr-rule").innerHTML = srMode === "y"
+    ? "x' = x,&nbsp; y' = y + ky·x"
+    : (srMode === "x" ? "x' = x + kx·y,&nbsp; y' = y" : "x' = x + kx·y,&nbsp; y' = y + ky·x");
+  coordTable($("#sr-table"), SR_SHAPE, after);
+}
+function srVals(){
+  const kx = srMode === "y" ? 0 : val("sr-kx");
+  const ky = srMode === "x" ? 0 : val("sr-ky");
+  return [kx,ky];
+}
+const srUpdate = ()=> srDraw.apply(null, srVals());
+wire(["sr-kx","sr-ky"], srUpdate);
+chips('[data-sh]', "data-sh", v=>{
+  srMode = v;
+  $("#sr-ky-wrap").style.display = (v === "x") ? "none" : "block";
+  document.getElementById("sr-kx").parentElement.style.display = (v === "y") ? "none" : "block";
+  srUpdate();
+});
+RESET.sr = ()=>{
+  restore(["sr-kx","sr-ky"]); srMode = "x";
+  $$('[data-sh]').forEach((b,i)=> b.classList.toggle("active", i===0));
+  $("#sr-ky-wrap").style.display = "none";
+  document.getElementById("sr-kx").parentElement.style.display = "block";
+  srUpdate();
+};
+$("#sr-play").addEventListener("click", ()=>{
+  const [kx,ky] = srVals();
+  animate(1100, p=> srDraw(kx*p, ky*p), srUpdate);
+});
+srUpdate();
+$("#sr-m1").innerHTML = matrixHTML([["1","kx","0"],["0","1","0"],["0","0","1"]], {sm:true, hi:[[0,1]]});
+$("#sr-m2").innerHTML = matrixHTML([["1","0","0"],["ky","1","0"],["0","0","1"]], {sm:true, hi:[[1,0]]});
+
+/* ============================================================================
+   LESSON 8 — HOMOGENEOUS COORDINATES
+   ========================================================================== */
+const HC_NOTES = {
+  "00":"<b>1</b> — passes x straight through with no scaling.",
+  "01":"<b>0</b> — y has no influence on x here (that slot would create an x-shear).",
+  "02":"<b>Tx</b> — multiplied by the third coordinate, which is always 1, so it lands in x' as a plain constant. This is the slot a 2×2 matrix does not have.",
+  "10":"<b>0</b> — x has no influence on y here (that slot would create a y-shear).",
+  "11":"<b>1</b> — passes y straight through with no scaling.",
+  "12":"<b>Ty</b> — the constant added to y', for exactly the same reason as Tx.",
+  "20":"<b>0</b> — x must not affect the third coordinate.",
+  "21":"<b>0</b> — y must not affect the third coordinate.",
+  "22":"<b>1</b> — keeps the third coordinate equal to 1, so the result is still a valid homogeneous point."
+};
+function hcBig(hiKey){
+  const hi = hiKey ? [[Number(hiKey[0]), Number(hiKey[1])]] : [];
+  $("#hc-big").innerHTML =
+    matrixHTML([["x'"],["y'"],["1"]]) + op("=") +
+    matrixHTML([["1","0","Tx"],["0","1","Ty"],["0","0","1"]], {hi:hi, id:"hc-bigm"}) +
+    matrixHTML([["x"],["y"],["1"]]);
+}
+hcBig();
+$("#hc-big").addEventListener("click", e=>{
+  const cell = e.target.closest("#hc-bigm .mcell");
+  if(!cell) return;
+  const k = cell.dataset.rc;
+  hcBig(k);
+  $("#hc-note").innerHTML = HC_NOTES[k];
+});
+
+/* step-by-step multiplication */
+function hcEq(){
+  const tx = Number($("#hc-tx").value) || 0, ty = Number($("#hc-ty").value) || 0;
+  const x  = Number($("#hc-x").value)  || 0, y  = Number($("#hc-y").value)  || 0;
+  $("#hc-calc-eq").innerHTML =
+    matrixHTML([["1","0",fmt(tx)],["0","1",fmt(ty)],["0","0","1"]], {hi:[[0,2],[1,2]]}) +
+    matrixHTML([[fmt(x)],[fmt(y)],["1"]]) + op("=") +
+    matrixHTML([["x'"],["y'"],["1"]]);
+  return {x:x, y:y, tx:tx, ty:ty};
+}
+function hcRun(instant){
+  const v = hcEq();
+  const M = matT(v.tx, v.ty);
+  const rows = [
+    "Row 1: &nbsp;1(" + fmt(v.x) + ") + 0(" + fmt(v.y) + ") + " + fmt(v.tx) + "(1) &nbsp;=&nbsp; <b>" + fmt(v.x + v.tx) + "</b>",
+    "Row 2: &nbsp;0(" + fmt(v.x) + ") + 1(" + fmt(v.y) + ") + " + fmt(v.ty) + "(1) &nbsp;=&nbsp; <b>" + fmt(v.y + v.ty) + "</b>",
+    "Row 3: &nbsp;0(" + fmt(v.x) + ") + 0(" + fmt(v.y) + ") + 1(1) &nbsp;=&nbsp; <b>1</b>",
+    "P' = (" + fmt(v.x + v.tx) + ", " + fmt(v.y + v.ty) + ", 1) &nbsp;→&nbsp; Cartesian P'(" + fmt(v.x + v.tx) + ", " + fmt(v.y + v.ty) + ")"
+  ];
+  const host = $("#hc-steps");
+  host.innerHTML = rows.map((r,i)=>
+    '<div class="calcrow' + (i===3 ? " final" : "") + '">' + r + "</div>").join("");
+  const els = $$(".calcrow", host);
+  els.forEach((el,i)=> setTimeout(()=> el.classList.add("in"), instant || REDUCED ? 0 : i*420));
+  const p = apply(M, [v.x, v.y]);
+  $("#hc-result").textContent = "P'(" + fmt(p[0]) + ", " + fmt(p[1]) + ")";
+}
+["hc-x","hc-y","hc-tx","hc-ty"].forEach(id=>{
+  const el = document.getElementById(id);
+  el.dataset.def = el.value;
+  el.addEventListener("input", ()=> hcRun(true));
+});
+$("#hc-run").addEventListener("click", ()=> hcRun(false));
+RESET.hc = ()=>{ restore(["hc-x","hc-y","hc-tx","hc-ty"]); hcRun(true); };
+hcRun(true);
+
+/* ============================================================================
+   LESSON 9 — COMPOSITION AND ORDER
+   ========================================================================== */
+const cpG = new Graph("#cp-graph", {range:9, labelStep:3});
+const CP_SHAPE = SHAPES.triangle;
+const CP_IDS = ["cp-sx","cp-sy","cp-ang","cp-tx","cp-ty"];
+let cpStage = 0;
+
+function cpMats(){
+  const S = matS(val("cp-sx"), val("cp-sy"));
+  const R = matR(val("cp-ang"));
+  const T = matT(val("cp-tx"), val("cp-ty"));
+  return {S:S, R:R, T:T, stages:[I(), S, mul(R,S), mulAll(T,R,S)]};
+}
+const CP_TEXT = [
+  "Nothing applied yet — this is the original object.",
+  "Stage 1: S is applied first because it sits closest to the point in T·R·S·P.",
+  "Stage 2: R now acts on the already-scaled object. The matrix so far is R·S.",
+  "Stage 3: T moves the scaled and rotated object into place. The full matrix is T·R·S."
+];
+const CP_LABEL = ["M = I (identity)","M = S","M = R · S","M = T · R · S"];
+
+function cpDraw(stage, blend){
+  const m = cpMats();
+  const target = m.stages[stage];
+  cpG.clearAll();
+  // ghost original
+  cpG.poly(CP_SHAPE, "sh-ghost", "ghost");
+  CP_SHAPE.forEach(p=> cpG.dot(p[0],p[1],"dot-ghost","ghost"));
+  // faint earlier stages for context
+  for(let s=1; s<stage; s++) cpG.poly(CP_SHAPE.map(p=>apply(m.stages[s],p)), "sh-mid", "static");
+  // current stage (optionally blended from the previous one for the animation)
+  const prev = m.stages[Math.max(0, stage-1)];
+  const t = (blend === undefined) ? 1 : blend;
+  const pts = CP_SHAPE.map(p=>{
+    const a = apply(prev,p), b = apply(target,p);
+    return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t];
+  });
+  cpG.poly(pts,"sh-after","main");
+  pts.forEach((p,i)=>{ cpG.dot(p[0],p[1],"dot-after","main"); cpG.label(p[0],p[1],LET[i]+"'","a","main"); });
+  $("#cp-matrix").innerHTML = matrixHTML(numCells(target), {sm:true, hi:[[0,2],[1,2]], hi2:[[0,0],[0,1],[1,0],[1,1]]});
+  $("#cp-label").textContent = CP_LABEL[stage];
+  $("#cp-desc").textContent = CP_TEXT[stage];
+}
+const cpUpdate = ()=> cpDraw(cpStage);
+wire(CP_IDS, cpUpdate);
+chips('[data-cp]', "data-cp", v=>{ cpStage = Number(v); cpUpdate(); });
+RESET.cp = ()=>{
+  restore(CP_IDS); cpStage = 0;
+  $$('[data-cp]').forEach((b,i)=> b.classList.toggle("active", i===0));
+  cpUpdate();
+};
+$("#cp-play").addEventListener("click", ()=>{
+  let s = 1;
+  const step = ()=>{
+    cpStage = s;
+    $$('[data-cp]').forEach((b,i)=> b.classList.toggle("active", i===s));
+    animate(900, p=> cpDraw(s,p), ()=>{ if(++s <= 3) setTimeout(step, 350); });
+  };
+  cpStage = 0; cpDraw(0); setTimeout(step, 250);
+});
+cpUpdate();
+
+/* order matters: same numbers, two orders */
+const omA = new Graph("#om-a", {range:7, labelStep:2});
+const omB = new Graph("#om-b", {range:7, labelStep:2});
+(function drawOrderDemo(){
+  const S = matS(2,1), R = matR(45), shape = SHAPES.square;
+  scene(omA, shape, mul(R,S), {labels:false});   // scale first
+  scene(omB, shape, mul(S,R), {labels:false});   // rotate first
+})();
+
+/* ============================================================================
+   CHEAT SHEET AND MISTAKES (generated so the matrices stay consistent)
+   ========================================================================== */
+const CHEAT = [
+  ["Translation","Move",[["1","0","Tx"],["0","1","Ty"],["0","0","1"]]],
+  ["Rotation","Turn",[["cos θ","−sin θ","0"],["sin θ","cos θ","0"],["0","0","1"]]],
+  ["Scaling","Resize",[["Sx","0","0"],["0","Sy","0"],["0","0","1"]]],
+  ["X-shear","Slant",[["1","kx","0"],["0","1","0"],["0","0","1"]]],
+  ["Y-shear","Slant",[["1","0","0"],["ky","1","0"],["0","0","1"]]],
+  ["Reflect x-axis","Mirror",[["1","0","0"],["0","−1","0"],["0","0","1"]]],
+  ["Reflect y-axis","Mirror",[["−1","0","0"],["0","1","0"],["0","0","1"]]],
+  ["Reflect origin","Mirror",[["−1","0","0"],["0","−1","0"],["0","0","1"]]]
+];
+$("#cheatGrid").innerHTML = CHEAT.map(c=>
+  '<div class="c"><h4>' + c[0] + '</h4><div class="eff">' + c[1] + "</div>" +
+  matrixHTML(c[2], {sm:true}) + "</div>").join("");
+$("#printBtn").addEventListener("click", ()=> window.print());
+
+const MISTAKES = [
+  ["Confusing Tx with Ty","Writing P(2,3) + T(4,2) as (2+2, 3+4).","Tx always goes with x and Ty always goes with y: (2+4, 3+2) = (6,5)."],
+  ["Wrong sign in rotation","Using x' = x cos θ + y sin θ for a counter-clockwise turn.","The minus sits in the first equation: x' = x cos θ − y sin θ."],
+  ["Confusing reflection with rotation","Treating any flip as a 180° turn.","Reflection reverses the order of the corners; rotation keeps it. They only coincide for reflection about the origin."],
+  ["Assuming scaling keeps proportions","Believing every scaling is uniform.","Only Sx = Sy is uniform. When Sx ≠ Sy the shape stretches and angles change."],
+  ["Forgetting the third coordinate","Multiplying a 3×3 matrix by a 2×1 column.","Write the point as (x, y, 1) so the dimensions match: 3×3 times 3×1."],
+  ["Multiplying in the wrong order","Writing P' = S·R·T·P when translation should act last.","The rightmost matrix acts first. For scale, then rotate, then translate, write P' = T·R·S·P."]
+];
+$("#mistakes").innerHTML = MISTAKES.map((m,i)=>
+  '<div class="mis"><div class="top">Mistake ' + (i+1) + " · " + m[0] + "</div>" +
+  '<div class="body"><div class="w"><b>Wrong idea:</b> ' + m[1] + "</div>" +
+  '<div class="r"><b>Correct idea:</b> ' + m[2] + "</div></div></div>").join("");
+
+/* ============================================================================
+   PLAYGROUND
+   ========================================================================== */
+const pgG = new Graph("#pg-graph", {range:10, labelStep:2});
+const PG_IDS = ["pg-tx","pg-ty","pg-ang","pg-sx","pg-sy","pg-kx","pg-ky"];
+let pgShape = "triangle";
+const pgRef = {x:false, y:false, o:false};
+
+function pgPoints(){
+  if(pgShape === "point"){
+    return [[Number($("#pg-px").value) || 0, Number($("#pg-py").value) || 0]];
+  }
+  return SHAPES[pgShape];
+}
+function pgMatrix(){
+  let F = I();
+  if(pgRef.x) F = mul(matRef("x"), F);
+  if(pgRef.y) F = mul(matRef("y"), F);
+  if(pgRef.o) F = mul(matRef("o"), F);
+  const Sh = matSh(val("pg-kx"), val("pg-ky"));
+  const S  = matS(val("pg-sx"), val("pg-sy"));
+  const R  = matR(val("pg-ang"));
+  const T  = matT(val("pg-tx"), val("pg-ty"));
+  return mulAll(T, R, S, Sh, F);
+}
+function pgUpdate(){
+  const shape = pgPoints(), M = pgMatrix();
+  const after = scene(pgG, shape, M, {labels: shape.length <= 4});
+  pgG.clear("overlay");
+  $("#pg-matrix").innerHTML = matrixHTML(numCells(M), {sm:true});
+  coordTable($("#pg-table"), shape, after);
+}
+wire(PG_IDS, pgUpdate);
+chips('[data-shape]', "data-shape", v=>{
+  pgShape = v;
+  $("#pg-point-wrap").style.display = (v === "point") ? "grid" : "none";
+  pgUpdate();
+});
+["pg-px","pg-py"].forEach(id=>{
+  const el = document.getElementById(id);
+  el.dataset.def = el.value;
+  el.addEventListener("input", pgUpdate);
+});
+$$('[data-pgrf]').forEach(b=> b.addEventListener("click", ()=>{
+  const k = b.getAttribute("data-pgrf");
+  pgRef[k] = !pgRef[k];
+  b.classList.toggle("active", pgRef[k]);
+  pgUpdate();
+}));
+RESET.pg = ()=>{
+  restore(PG_IDS.concat(["pg-px","pg-py"]));
+  pgShape = "triangle";
+  pgRef.x = pgRef.y = pgRef.o = false;
+  $$('[data-shape]').forEach((b,i)=> b.classList.toggle("active", i===0));
+  $$('[data-pgrf]').forEach(b=> b.classList.remove("active"));
+  $("#pg-point-wrap").style.display = "none";
+  pgUpdate();
+};
+pgUpdate();
+
+/* ============================================================================
+   "TRY THIS YOURSELF" CHALLENGES — one delegated handler for all cards
+   ========================================================================== */
+$$("[data-chal]").forEach(card=>{
+  const want = card.dataset.answers.split(",").map(Number);
+  const inputs = $$("input", card);
+  const fb = $("[data-fb]", card);
+  const why = $("[data-why]", card);
+  $("[data-check]", card).addEventListener("click", ()=>{
+    const got = inputs.map(i=> i.value === "" ? NaN : Number(i.value));
+    if(got.some(isNaN)){
+      fb.className = "fb show no"; fb.textContent = "Fill in both boxes first.";
+      return;
+    }
+    const ok = got.every((g,i)=> Math.abs(g - want[i]) < 0.01);
+    fb.className = "fb show " + (ok ? "ok" : "no");
+    fb.textContent = ok ? "Correct — well done." : "Not quite. Check the working below and try again.";
+    if(ok) why.classList.add("show");
+  });
+  $("[data-show]", card).addEventListener("click", ()=>{
+    why.classList.add("show");
+    fb.className = "fb show no";
+    fb.textContent = "Solution shown — try the next one without it.";
+  });
+});
+
+/* ============================================================================
+   QUIZ — 15 questions
+   ========================================================================== */
+const QUESTIONS = [
+  {q:"What does a 2D geometric transformation actually change?",
+   o:["The coordinates of every point of the object","The colour of the object","The number of vertices in the object","The screen resolution"],
+   a:0, w:"A transformation is a rule that maps each point P(x, y) to a new point P'(x', y'). Nothing but the coordinates changes."},
+  {q:"A point P(2, 3) is translated by Tx = 4 and Ty = 2. What is the new point?",
+   o:["(6, 5)","(4, 6)","(2, 5)","(6, 3)"],
+   a:0, w:"x' = 2 + 4 = 6 and y' = 3 + 2 = 5, giving P'(6, 5)."},
+  {q:"Which transformation changes an object's position but never its size, shape or orientation?",
+   o:["Scaling","Translation","Shearing","Reflection"],
+   a:1, w:"Translation slides every point by the same amount, so distances and angles are untouched."},
+  {q:"Rotate P(2, 1) by 90° counter-clockwise about the origin. What is P'?",
+   o:["(1, 2)","(−1, 2)","(2, −1)","(−2, −1)"],
+   a:1, w:"cos 90° = 0 and sin 90° = 1, so x' = 2(0) − 1(1) = −1 and y' = 2(1) + 1(0) = 2."},
+  {q:"In the 2×2 counter-clockwise rotation matrix, where does the minus sign appear?",
+   o:["Top-left","Top-right","Bottom-left","Bottom-right"],
+   a:1, w:"The matrix is [cos θ, −sin θ; sin θ, cos θ], so the minus is on −sin θ in the top-right position."},
+  {q:"Scaling P(3, 4) with Sx = 2 and Sy = 2 gives which point, and what kind of scaling is it?",
+   o:["(6, 8), uniform","(5, 6), uniform","(6, 8), non-uniform","(1.5, 2), uniform"],
+   a:0, w:"Multiply each coordinate: (3×2, 4×2) = (6, 8). Sx = Sy, so the scaling is uniform."},
+  {q:"When is scaling described as non-uniform?",
+   o:["When Sx = Sy","When Sx ≠ Sy","When both factors are less than 1","When the object is rotated first"],
+   a:1, w:"Different factors stretch the object by different amounts along x and y, so proportions change."},
+  {q:"Reflect P(4, −2) about the x-axis. What is P'?",
+   o:["(−4, −2)","(4, 2)","(−4, 2)","(2, −4)"],
+   a:1, w:"Reflection about the x-axis keeps x and negates y: (4, −(−2)) = (4, 2)."},
+  {q:"Which homogeneous matrix reflects a point about the origin?",
+   o:["diag(1, −1, 1)","diag(−1, 1, 1)","diag(−1, −1, 1)","diag(1, 1, 1)"],
+   a:2, w:"Both coordinates flip sign, so the top-left 2×2 block is −1 on each diagonal entry."},
+  {q:"An x-shear with kx = 2 is applied to P(1, 3). What is P'?",
+   o:["(7, 3)","(1, 7)","(3, 1)","(2, 6)"],
+   a:0, w:"x' = x + kx·y = 1 + 2(3) = 7, while y stays at 3."},
+  {q:"Why were homogeneous coordinates introduced in computer graphics?",
+   o:["To store colour information","To let translation be written as a matrix multiplication","To make matrices smaller","To speed up division"],
+   a:1, w:"Translation adds a constant, which a 2×2 matrix cannot produce. The extra coordinate gives the matrix a slot for that constant."},
+  {q:"How is the Cartesian point (5, 7) written in homogeneous coordinates?",
+   o:["(5, 7, 0)","(5, 7, 1)","(1, 5, 7)","(5, 7, 5)"],
+   a:1, w:"The normalized homogeneous form appends 1: (x, y, 1)."},
+  {q:"What size is a homogeneous transformation matrix for 2D graphics?",
+   o:["2 × 2","2 × 3","3 × 3","4 × 4"],
+   a:2, w:"Three coordinates in, three out, so the matrix is 3 × 3. The 4 × 4 form is the 3D equivalent."},
+  {q:"In P' = T · R · S · P, which transformation is applied to the point first?",
+   o:["T","R","S","All at the same time"],
+   a:2, w:"Matrix multiplication is evaluated right to left, so S — the matrix nearest the point — acts first."},
+  {q:"For two transformation matrices A and B, which statement is generally true?",
+   o:["AB = BA always","AB ≠ BA in general, so order matters","AB is always the identity","Only translation matrices can be multiplied"],
+   a:1, w:"Matrix multiplication is not commutative. Rotating then translating gives a different result from translating then rotating."}
+];
+
+const quizState = {answered:0, score:0};
+const KEYS = ["A","B","C","D"];
+
+function buildQuiz(){
+  quizState.answered = 0; quizState.score = 0;
+  $("#qScore").textContent = "0";
+  $("#qVerdict").textContent = "Answer all fifteen questions to get your verdict.";
+  $("#qFinal").style.display = "none";
+  $("#quizList").innerHTML = QUESTIONS.map((q,i)=>
+    '<div class="q" data-q="' + i + '">' +
+      '<div class="qh">Question ' + (i+1) + " of " + QUESTIONS.length + "</div>" +
+      '<div class="qt">' + q.q + "</div>" +
+      q.o.map((o,j)=> '<button class="opt" data-o="' + j + '"><span class="k">' + KEYS[j] + "</span>" + o + "</button>").join("") +
+      '<div class="why"></div>' +
+    "</div>").join("");
+}
+$("#quizList").addEventListener("click", e=>{
+  const btn = e.target.closest(".opt");
+  if(!btn || btn.disabled) return;
+  const card = btn.closest(".q");
+  const qi = Number(card.dataset.q), pick = Number(btn.dataset.o), q = QUESTIONS[qi];
+  $$(".opt", card).forEach(b=>{
+    b.disabled = true;
+    const j = Number(b.dataset.o);
+    if(j === q.a) b.classList.add("right");
+    else if(j === pick) b.classList.add("wrong");
+  });
+  const why = $(".why", card);
+  why.classList.add("show");
+  why.innerHTML = (pick === q.a ? "<b>Correct.</b> " : "<b>Not quite — the answer is " + KEYS[q.a] + ".</b> ") + q.w;
+  quizState.answered++;
+  if(pick === q.a) quizState.score++;
+  $("#qScore").textContent = quizState.score;
+  if(quizState.answered === QUESTIONS.length) finishQuiz();
+  else $("#qVerdict").textContent = quizState.answered + " of " + QUESTIONS.length + " answered.";
+});
+function finishQuiz(){
+  const s = quizState.score;
+  let band, advice;
+  if(s >= 13){ band = "Excellent"; advice = "You can read a transformation matrix on sight. Move on to 3D transformations and the graphics pipeline."; }
+  else if(s >= 10){ band = "Very good"; advice = "Solid understanding. Re-run the composition section so the right-to-left order becomes automatic."; }
+  else if(s >= 7){ band = "Good — revise the matrices"; advice = "Work through the matrix cheat sheet and redo the homogeneous multiplication steps by hand."; }
+  else { band = "Review the concepts"; advice = "Start again from the coordinate system and use the playground after each lesson before returning here."; }
+  $("#qVerdict").textContent = band;
+  const f = $("#qFinal");
+  f.style.display = "block";
+  f.innerHTML = '<p class="eyebrow"><span class="step">Result</span> Your score</p>' +
+    '<p class="lede">Your score: ' + s + " / " + QUESTIONS.length + " — " + band + "</p>" +
+    "<p style='margin-top:10px'>" + advice + "</p>" +
+    '<div class="eq" style="line-height:2">13–15 → Excellent &nbsp;·&nbsp; 10–12 → Very good &nbsp;·&nbsp; 7–9 → Good, revise matrices &nbsp;·&nbsp; below 7 → Review the concepts</div>' +
+    '<button class="btn primary no-print" id="qAgain">Try the quiz again</button>';
+  $("#qAgain").addEventListener("click", ()=>{ buildQuiz(); window.scrollTo({top:0, behavior:"smooth"}); });
+}
+$("#qReset").addEventListener("click", buildQuiz);
+buildQuiz();
+
+/* ============================================================================
+   BOOT
+   ========================================================================== */
+function onSectionShown(id){
+  // Graphs are drawn in viewBox units, so hidden sections render correctly.
+  // Only the playground needs a nudge in case a control changed while hidden.
+  if(id === "playground") pgUpdate();
+}
+goTo("overview", true);
+
+})();
+</script>
+</body>
+</html>

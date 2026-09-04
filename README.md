@@ -71,6 +71,23 @@ The number of vertices, vertex coordinates, transformation type, transformation 
 
 ---
 
+### 4. Composite 2D Transformations Using Matrix Representation
+
+**Description:**
+Lab 4 extends Lab 3 by chaining multiple 2D transformations (translation, rotation, scaling, and reflection) into a single **composite transformation matrix**. The program reads a custom shape, lets the user build a sequence of transformations, and applies them one after another, printing the intermediate coordinates at every stage. Each stage of the transformation is rendered on the graph so the full sequence from the original shape to the final result can be visualized.
+
+**Implementation:**
+
+[`Lab4/main.py`](Lab4/main.py)
+
+**Output:**
+
+<video src="Lab4/Output/Lab4_Demo.mp4" controls width="600"></video>
+
+> If the video above does not render, watch/download it directly: [`Lab4/Output/Lab4_Demo.mp4`](Lab4/Output/Lab4_Demo.mp4)
+
+---
+
 ## Technologies Used
 
 * Python

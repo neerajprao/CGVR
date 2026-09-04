@@ -1104,6 +1104,43 @@ def main():
     glLoadIdentity()
 
 
+    # ==========================================
+    # Replay Support
+    # ==========================================
+
+    # Mutable container so the key callback can
+    # reset animation state owned by this function
+
+    replay_state = {
+        "requested": False
+    }
+
+    def key_callback(
+        win,
+        key,
+        scancode,
+        action,
+        mods
+    ):
+
+        if (
+            key == glfw.KEY_R
+            and action == glfw.PRESS
+        ):
+
+            replay_state["requested"] = True
+
+    glfw.set_key_callback(
+        window,
+        key_callback
+    )
+
+    print(
+        "\nPress R at any time to replay "
+        "the animation."
+    )
+
+
     # White background
 
     glClearColor(
@@ -1189,6 +1226,21 @@ def main():
         )
 
         last_time = current_time
+
+
+        # ==========================================
+        # Handle Replay Request
+        # ==========================================
+
+        if replay_state["requested"]:
+
+            current_stage = 0
+
+            animation_progress = 0.0
+
+            pause_start_time = None
+
+            replay_state["requested"] = False
 
 
         # ==========================================
