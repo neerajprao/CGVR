@@ -88,6 +88,21 @@ Lab 4 extends Lab 3 by chaining multiple 2D transformations (translation, rotati
 
 ---
 
+### 5. Cohen-Sutherland Line Clipping Algorithm
+
+**Description:**
+Lab 5 implements the **Cohen-Sutherland Line Clipping Algorithm**, which clips a line segment against a rectangular clipping window. Each endpoint is assigned a 4-bit region code (left, right, bottom, top) relative to the window, and the algorithm iteratively computes intersections with the window boundaries until the line is trivially accepted (fully inside) or trivially rejected (fully outside). The original line is drawn in red and the clipped portion inside the window is highlighted in green.
+
+**Implementation:**
+
+[`Lab5/cohen_sutherland.py`](Lab5/cohen_sutherland.py)
+
+**Output:**
+
+![Cohen-Sutherland Line Clipping](Lab5/Output/LineClipping.png)
+
+---
+
 ## Technologies Used
 
 * Python
