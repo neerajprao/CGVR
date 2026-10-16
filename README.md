@@ -195,6 +195,50 @@ The program reads the rotation speed and the starting fragment shader mode (pres
 
 ---
 
+### 10. 3D Viewing Pipeline with Projection and Viewport Mapping
+
+**Description:**
+Lab 10 implements the **3D viewing pipeline** that turns a 3D object into pixels on a 2D screen. A colored cube passes through every stage:
+
+1. **Model transformation** (object → world): the cube is rotated about the X and Y axes.
+2. **View transformation** (world → eye): a **look-at** camera builds its own axes from the eye position, target point, and up vector, so that the camera sits at the origin looking down -Z.
+3. **Projection** (eye → clip): the window is split into two viewports. The left one uses a **perspective** projection (field of view 45°), where distant points shrink. The right one uses an **orthographic** (parallel) projection, where parallel edges stay parallel.
+4. **Perspective division** (clip → NDC): x, y, and z are divided by w, giving normalized device coordinates in [-1, 1].
+5. **Viewport mapping** (NDC → window): NDC are scaled and shifted into each viewport's pixel rectangle, and depth is mapped to [0, 1].
+6. **Depth testing**: the GPU's depth buffer removes hidden surfaces (see Lab 6).
+
+The GPU performs stages 4 to 6 automatically. To show them, the program repeats the whole pipeline on the CPU and prints the result: one vertex is traced through every stage, followed by the NDC and window coordinates of all 8 cube corners for each viewport. These values match what the GPU draws.
+
+The program reads the camera position and the rotation speed (press Enter to use the default camera `(3, 2, 6)` and `45` degrees per second). In the window, the `Left`/`Right` keys orbit the camera, `Space` pauses the rotation, `T` prints the pipeline for the current frame, and `Esc` quits. Window coordinates are in framebuffer pixels, which are twice the window size on Retina displays.
+
+**Implementation:**
+
+[`Lab10/main.py`](Lab10/main.py)
+
+**Outputs:**
+
+#### Perspective (left) and orthographic (right) viewports
+
+![3D Viewing Pipeline](Lab10/Output/Pipeline.png)
+
+#### Camera orbited 70° to the left
+
+![3D Viewing Pipeline, orbited camera](Lab10/Output/Orbit.png)
+
+#### Pipeline trace printed in the terminal (perspective viewport)
+
+```text
+Vertex 0 through the pipeline:
+  1. Object                (  -1.00,   -1.00,    1.00,    1.00)
+  2. World  = Model * obj  (  -1.00,   -1.33,    0.48,    1.00)
+  3. Eye    = View * world (  -1.11,   -1.27,   -7.39,    1.00)
+  4. Clip   = Proj * eye   (  -2.68,   -3.06,    7.21,    7.39)
+  5. NDC    = clip / w     (  -0.36,   -0.41,    0.97)
+  6. Window = viewport     ( 318.66,  292.76,    0.99)
+```
+
+---
+
 ## Technologies Used
 
 * Python
