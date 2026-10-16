@@ -165,6 +165,36 @@ The program reads the coefficients `ka`, `kd`, `ks`, the shininess exponent `n`,
 
 ---
 
+### 8. Basic OpenGL Program Using Vertex and Fragment Shaders
+
+**Description:**
+Lab 8 uses the **programmable pipeline** (OpenGL 3.3 core profile) to draw a rotating 3D cube with GLSL shaders. The cube's vertices (position, color, and normal for each of 24 vertices) are uploaded once to GPU memory in a **VBO**, the 36 triangle indices in an **EBO**, and the attribute layout is recorded in a **VAO**.
+
+* The **vertex shader** runs once per vertex: it transforms the vertex with the model, view, and projection matrices (passed as uniforms) and passes its color, normal, and world position on to the next stage.
+* The **fragment shader** runs once per pixel on the values interpolated across each triangle. It has three modes: interpolated vertex colors, per-fragment Phong lighting (Lab 7's model on the GPU), and the surface normal shown as a color.
+
+The program reads the rotation speed and the starting fragment shader mode (press Enter to keep the defaults), and prints the OpenGL/GLSL versions, the shader compile and link status, and the vertex layout. In the window, `M` switches the fragment shader mode and `Space` pauses the rotation. The GPU's depth buffer is enabled for hidden surface removal (see Lab 6).
+
+**Implementation:**
+
+[`Lab8/main.py`](Lab8/main.py)
+
+**Outputs:**
+
+#### Vertex colors (interpolated)
+
+![Vertex colors](Lab8/Output/VertexColors.png)
+
+#### Per-fragment lighting
+
+![Per-fragment lighting](Lab8/Output/Lighting.png)
+
+#### Normals as colors
+
+![Normals](Lab8/Output/Normals.png)
+
+---
+
 ## Technologies Used
 
 * Python
