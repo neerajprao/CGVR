@@ -2,3 +2,11 @@ cgrv.venv
 .venv
 .DS_Store
 explain.md
+# Unity (Lab9) generated folders
+Lab9/[Ll]ibrary/
+Lab9/[Tt]emp/
+Lab9/[Ll]ogs/
+Lab9/[Uu]ser[Ss]ettings/
+Lab9/[Oo]bj/
+Lab9/*.csproj
+Lab9/*.sln
