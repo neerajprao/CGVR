@@ -1,6 +1,21 @@
 # Computer Graphics Lab
 
-This repository contains implementations of computer graphics algorithms using **Python and PyOpenGL**. Lab 9 uses the **Unity** game engine with C#.
+This repository contains implementations of computer graphics algorithms using **Python and PyOpenGL**. Lab 9 uses the **Unity** game engine with C#, and Lab 8 also has an additional Unity version.
+
+## Repository Structure
+
+```text
+CGVR/
+├── LabN/                      Labs 1-7 and 10: main.py + Output/ (screenshots)
+├── Lab8/
+│   ├── main.py                OpenGL + GLSL version
+│   ├── Output/
+│   └── Lab8Unity/             Unity + HLSL version (Assets/, Packages/, ProjectSettings/, Output/)
+├── Lab9/                      Unity project (Assets/, Packages/, ProjectSettings/, Output/)
+├── 2d-transformations.html    Interactive notes for Labs 3-4 (open in a browser)
+├── CG & VR Lab Manual.pdf     Course lab manual
+└── requirements.txt           Python packages (PyOpenGL, PyOpenGL_accelerate, glfw)
+```
 
 ## Lab Programs
 
@@ -54,6 +69,8 @@ The number of vertices, vertex coordinates, transformation type, transformation 
 **Implementation:**
 
 [`Lab3/main.py`](Lab3/main.py)
+
+Interactive notes on the 2D transformation matrices (also covering the composite transformations of Lab 4): [`2d-transformations.html`](2d-transformations.html), open it in a browser.
 
 **Outputs:**
 
@@ -193,6 +210,22 @@ The program reads the rotation speed and the starting fragment shader mode (pres
 
 ![Normals](Lab8/Output/Normals.png)
 
+#### Lab 8 in Unity
+
+The same program is also built in **Unity** (Unity 6, Universal Render Pipeline) as an addition to the OpenGL version. The shaders are written by hand in HLSL rather than using a built-in Unity material, and the cube is built in code rather than using Unity's cube primitive:
+
+* **Vertex and fragment shaders** ([`CubeShader.shader`](Lab8/Lab8Unity/Assets/Shaders/CubeShader.shader)): the same vertex shader (model → world → clip, passing color, normal, and world position) and the same three fragment shader modes as the GLSL version, with the same Phong constants. Unity supplies the model, view, and projection matrices as built-in uniforms (`unity_ObjectToWorld`, `UNITY_MATRIX_V`, `UNITY_MATRIX_P`).
+* **Vertex data** ([`CubeMesh.cs`](Lab8/Lab8Unity/Assets/Scripts/CubeMesh.cs)): the 24 vertices (position, color, normal) and 36 indices are built in code into a `Mesh`, which plays the role of the VBO, EBO, and VAO.
+* **Uniforms and input** ([`ShaderController.cs`](Lab8/Lab8Unity/Assets/Scripts/ShaderController.cs)): spins the cube at 45°/s (tilted 25°), sends `_Mode` and the light position to the shader through a `MaterialPropertyBlock`, and logs the graphics API, shader status, and vertex layout to the Console. `M` switches the fragment shader mode and `Space` pauses the rotation.
+
+Unity is **left-handed** (+Z points into the screen) while OpenGL is right-handed, so the cube, camera `(0, 0, -6)`, and light `(3, 4, -5)` are mirrored in z, the rotation angles are negated, and each triangle's index order is reversed (Unity's front faces are clockwise). With these changes the picture matches the OpenGL version. The shader also converts its output to linear color space so the colors match.
+
+**Outputs (Unity):**
+
+| Vertex colors | Per-fragment lighting | Normals as colors |
+|---|---|---|
+| ![Unity vertex colors](Lab8/Lab8Unity/Output/VertexColors.png) | ![Unity lighting](Lab8/Lab8Unity/Output/Lighting.png) | ![Unity normals](Lab8/Lab8Unity/Output/Normals.png) |
+
 ---
 
 ### 9. Simple Interactive 3D Scene Using Unity
@@ -272,7 +305,7 @@ Vertex 0 through the pipeline:
 * PyOpenGL
 * GLFW
 * OpenGL
-* Unity 6 (Universal Render Pipeline) and C# (Lab 9)
+* Unity 6 (Universal Render Pipeline), C#, and HLSL (Lab 9, and the Unity version of Lab 8)
 
 
 ## How to Run
@@ -291,3 +324,7 @@ python main.py
 ```
 
 **Lab 9 (Unity):** in Unity Hub, click **Add → Add project from disk** and select the `Lab9` folder, open it with Unity 6, open `Assets/Scenes/SampleScene`, and press **Play**. Unity regenerates the `Library` folder on the first open.
+
+**Lab 8 (Unity version):** the same steps with the `Lab8/Lab8Unity` folder. Click inside the Game view before pressing `M` or `Space`.
+
+Both Unity projects were made with **Unity 6000.6.6f1**. Their `Packages/manifest.json` includes the [MCP for Unity](https://github.com/CoplayDev/unity-mcp) editor package, which Unity downloads from GitHub on the first open. It is only used to automate the editor, so it can be removed if you don't need it. Generated folders (`Library`, `Temp`, `Logs`, `UserSettings`) are not committed.
