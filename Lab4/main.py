@@ -58,6 +58,15 @@ def scaling_matrix(sx, sy):
     ]
 
 
+def shearing_matrix(shx, shy):
+
+    return [
+        [1, shx, 0],
+        [shy, 1, 0],
+        [0, 0, 1],
+    ]
+
+
 def reflection_matrix(axis):
 
     if axis == "x":
@@ -650,6 +659,7 @@ def read_transformation():
     print("2. Rotation")
     print("3. Scaling")
     print("4. Reflection")
+    print("5. Shearing")
 
     choice = input(
         "Choice: "
@@ -751,6 +761,43 @@ def read_transformation():
     if choice == "4":
 
         return read_reflection()
+
+
+    # Shearing
+
+    if choice == "5":
+
+        shx = float(
+            input("shx (x-shear factor): ")
+        )
+
+        shy = float(
+            input("shy (y-shear factor): ")
+        )
+
+        px = float(
+            input(
+                "Reference point x: "
+            )
+        )
+
+        py = float(
+            input(
+                "Reference point y: "
+            )
+        )
+
+        return (
+            about_point(
+                shearing_matrix(shx, shy),
+                px,
+                py
+            ),
+            (
+                f"Shearing by ({shx:g}, {shy:g}) "
+                f"about ({px:g}, {py:g})"
+            )
+        )
 
 
     raise SystemExit(
@@ -1072,11 +1119,18 @@ def main():
     # Configure OpenGL Projection
     # ==========================================
 
+    # Viewport uses the framebuffer size, which is
+    # larger than the window on Retina displays
+
+    fb_w, fb_h = glfw.get_framebuffer_size(
+        window
+    )
+
     glViewport(
         0,
         0,
-        WIDTH,
-        HEIGHT
+        fb_w,
+        fb_h
     )
 
 

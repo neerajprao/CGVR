@@ -37,7 +37,24 @@ def midpoint_circle(xc, yc, r):
             p = p + 2 * x - 2 * y + 1
 
 
+def read_int(prompt, default):
+
+    value = input(f"{prompt} [{default}]: ").strip()
+
+    return int(value) if value else default
+
+
 def main():
+
+    print("Enter the circle parameters (window is 800 x 600)")
+    print("Press Enter to keep the default value")
+
+    xc = read_int("Center x", 400)
+    yc = read_int("Center y", 300)
+    r = read_int("Radius", 150)
+
+    if r <= 0:
+        raise SystemExit("Radius must be positive")
 
     if not glfw.init():
         return
@@ -87,12 +104,10 @@ def main():
 
         glBegin(GL_POINTS)
 
-        # Center = (400, 300)
-        # Radius = 150
         midpoint_circle(
-            400,
-            300,
-            150
+            xc,
+            yc,
+            r
         )
 
         glEnd()

@@ -1,7 +1,13 @@
-from OpenGL.GL import *
-from OpenGL.GLUT import *
-from OpenGL.GLU import *
 import sys
+import glfw
+from OpenGL.GL import *
+
+
+# ---------------------------------------------------------
+# Window size
+# ---------------------------------------------------------
+WIDTH = 800
+HEIGHT = 600
 
 
 # ---------------------------------------------------------
@@ -116,6 +122,40 @@ def cohen_sutherland(x1, y1, x2, y2):
 
 
 # ---------------------------------------------------------
+# View bounds: fit the clipping window and the line,
+# keeping the window's aspect ratio so nothing is stretched
+# ---------------------------------------------------------
+def get_view_bounds(x1, y1, x2, y2):
+
+    min_x = min(XMIN, x1, x2)
+    max_x = max(XMAX, x1, x2)
+    min_y = min(YMIN, y1, y2)
+    max_y = max(YMAX, y1, y2)
+
+    padding = 0.1 * max(max_x - min_x, max_y - min_y)
+
+    width = max_x - min_x + 2 * padding
+    height = max_y - min_y + 2 * padding
+
+    aspect = WIDTH / HEIGHT
+
+    if width / height < aspect:
+        width = height * aspect
+    else:
+        height = width / aspect
+
+    center_x = (min_x + max_x) / 2
+    center_y = (min_y + max_y) / 2
+
+    return (
+        center_x - width / 2,
+        center_x + width / 2,
+        center_y - height / 2,
+        center_y + height / 2,
+    )
+
+
+# ---------------------------------------------------------
 # Draw clipping rectangle
 # ---------------------------------------------------------
 def draw_rectangle():
@@ -133,27 +173,14 @@ def draw_rectangle():
 # ---------------------------------------------------------
 # Display
 # ---------------------------------------------------------
-def display():
+def display(x1, y1, x2, y2, clipped):
 
     glClear(GL_COLOR_BUFFER_BIT)
-
-    # -----------------------------------------------------
-    # Original line
-    # -----------------------------------------------------
-    x1, y1 = -8, -6
-    x2, y2 = 8, 6
 
     # Draw clipping window
     glColor3f(1.0, 1.0, 1.0)
 
-    glBegin(GL_LINE_LOOP)
-
-    glVertex2f(XMIN, YMIN)
-    glVertex2f(XMAX, YMIN)
-    glVertex2f(XMAX, YMAX)
-    glVertex2f(XMIN, YMAX)
-
-    glEnd()
+    draw_rectangle()
 
     # -----------------------------------------------------
     # Draw original line
@@ -166,13 +193,6 @@ def display():
     glVertex2f(x2, y2)
 
     glEnd()
-
-    # -----------------------------------------------------
-    # Cohen-Sutherland clipping
-    # -----------------------------------------------------
-    clipped = cohen_sutherland(
-        x1, y1, x2, y2
-    )
 
     # Draw clipped line
     if clipped is not None:
@@ -192,22 +212,21 @@ def display():
 
         glLineWidth(1.0)
 
-    glutSwapBuffers()
-
 
 # ---------------------------------------------------------
-# Initialization
+# Terminal input
 # ---------------------------------------------------------
-def init():
+def read_float(prompt, default):
 
-    glClearColor(0.0, 0.0, 0.0, 1.0)
+    value = input(f"{prompt} [{default:g}]: ").strip()
 
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
+    return float(value) if value else default
 
-    gluOrtho2D(-10, 10, -8, 8)
 
-    glMatrixMode(GL_MODELVIEW)
+def format_code(code):
+
+    # Bit order: TOP BOTTOM RIGHT LEFT
+    return format(code, "04b")
 
 
 # ---------------------------------------------------------
@@ -215,25 +234,71 @@ def init():
 # ---------------------------------------------------------
 def main():
 
-    glutInit(sys.argv)
+    print(f"Clipping window: x = [{XMIN}, {XMAX}], y = [{YMIN}, {YMAX}]")
+    print("Enter the line endpoints (press Enter to keep the default)")
 
-    glutInitDisplayMode(
-        GLUT_DOUBLE | GLUT_RGB
+    x1 = read_float("x1", -8)
+    y1 = read_float("y1", -6)
+    x2 = read_float("x2", 8)
+    y2 = read_float("y2", 6)
+
+    print(f"\nRegion code of P1 ({x1:g}, {y1:g}): {format_code(compute_code(x1, y1))}")
+    print(f"Region code of P2 ({x2:g}, {y2:g}): {format_code(compute_code(x2, y2))}")
+    print("(bit order: TOP BOTTOM RIGHT LEFT)")
+
+    # -----------------------------------------------------
+    # Cohen-Sutherland clipping
+    # -----------------------------------------------------
+    clipped = cohen_sutherland(
+        x1, y1, x2, y2
     )
 
-    glutInitWindowSize(800, 600)
+    if clipped is None:
+        print("\nLine rejected: it lies completely outside the clipping window")
 
-    glutInitWindowPosition(100, 100)
+    else:
+        cx1, cy1, cx2, cy2 = clipped
+        print(f"\nClipped line: ({cx1:g}, {cy1:g}) -> ({cx2:g}, {cy2:g})")
 
-    glutCreateWindow(
-        b"Experiment 5 - Cohen Sutherland Line Clipping"
+    # -----------------------------------------------------
+    # Initialization
+    # -----------------------------------------------------
+    if not glfw.init():
+        sys.exit("Failed to initialize GLFW")
+
+    window = glfw.create_window(
+        WIDTH,
+        HEIGHT,
+        "Cohen-Sutherland Line Clipping",
+        None,
+        None
     )
 
-    init()
+    if not window:
+        glfw.terminate()
+        sys.exit("Failed to create GLFW window")
 
-    glutDisplayFunc(display)
+    glfw.make_context_current(window)
 
-    glutMainLoop()
+    glClearColor(0.0, 0.0, 0.0, 1.0)
+
+    left, right, bottom, top = get_view_bounds(x1, y1, x2, y2)
+
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+
+    glOrtho(left, right, bottom, top, -1, 1)
+
+    glMatrixMode(GL_MODELVIEW)
+
+    while not glfw.window_should_close(window):
+
+        display(x1, y1, x2, y2, clipped)
+
+        glfw.swap_buffers(window)
+        glfw.poll_events()
+
+    glfw.terminate()
 
 
 if __name__ == "__main__":

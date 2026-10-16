@@ -50,6 +50,14 @@ def scaling_matrix(sx, sy):
     ]
 
 
+def shearing_matrix(shx, shy):
+    return [
+        [1, shx, 0],
+        [shy, 1, 0],
+        [0, 0, 1],
+    ]
+
+
 def reflection_matrix(axis):
     if axis == "x":
         return scaling_matrix(1, -1)
@@ -293,6 +301,7 @@ def read_transformation():
     print("2. Rotation")
     print("3. Scaling")
     print("4. Reflection")
+    print("5. Shearing")
     choice = input("Choice: ").strip()
 
     if choice == "1":
@@ -319,6 +328,15 @@ def read_transformation():
 
     if choice == "4":
         return read_reflection()
+
+    if choice == "5":
+        shx = float(input("shx (x-shear factor): "))
+        shy = float(input("shy (y-shear factor): "))
+        px = float(input("Reference point x: "))
+        py = float(input("Reference point y: "))
+        return about_point(
+            shearing_matrix(shx, shy), px, py
+        ), f"Shearing by ({shx:g}, {shy:g}) about ({px:g}, {py:g})"
 
     raise SystemExit("Invalid transformation choice")
 
@@ -364,7 +382,9 @@ def main():
     glfw.make_context_current(window)
 
     # Configure 2D Orthographic Projection (0 to WIDTH, HEIGHT to 0 for screen coordinates)
-    glViewport(0, 0, WIDTH, HEIGHT)
+    # Viewport uses the framebuffer size, which is larger than the window on Retina displays
+    fb_w, fb_h = glfw.get_framebuffer_size(window)
+    glViewport(0, 0, fb_w, fb_h)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     glOrtho(0, WIDTH, HEIGHT, 0, -1, 1)
