@@ -1,6 +1,6 @@
 # Computer Graphics Lab
 
-This repository contains implementations of computer graphics algorithms using **Python and PyOpenGL**.
+This repository contains implementations of computer graphics algorithms using **Python and PyOpenGL**. Lab 9 uses the **Unity** game engine with C#.
 
 ## Lab Programs
 
@@ -195,6 +195,33 @@ The program reads the rotation speed and the starting fragment shader mode (pres
 
 ---
 
+### 9. Simple Interactive 3D Scene Using Unity
+
+**Description:**
+Lab 9 builds a small interactive 3D scene in the **Unity** game engine (Unity 6, Universal Render Pipeline) with C# scripts. Every object in the scene is a **GameObject** with a **Transform** (position, rotation, scale), and its behaviour comes from the components attached to it: a mesh renderer and **material** for its appearance, a **collider** for hit testing, and scripts for interaction.
+
+* **Ground:** a plane scaled ×3 into a 30 × 30 floor with a green material.
+* **Player:** a blue cube that moves with `W`/`A`/`S`/`D` or the arrow keys at 5 units per second, turns to face its direction of motion, and is clamped so it stays on the ground.
+* **Spinners:** a sphere, a cylinder, and a cube, each rotating continuously about its own axis (Y at 90°/s, the diagonal (1, 1, 0) at 120°/s, and X at 60°/s).
+* **Mouse picking:** a left click casts a **ray** from the camera through the mouse position (`Camera.ScreenPointToRay` + `Physics.Raycast`). If the ray hits a spinner, the spinner pauses or resumes and changes to a random color, and the click is logged in the Console.
+* **Camera:** follows the player from a fixed offset `(0, 6, -10)`, smoothed with `Vector3.SmoothDamp`, and keeps looking at it.
+
+Movement is multiplied by `Time.deltaTime`, so speeds are in units (or degrees) per second, independent of the frame rate. Input is read through Unity's new **Input System** (`Keyboard.current`, `Mouse.current`). A directional light casts shadows on the ground.
+
+**Implementation:**
+
+* [`Lab9/Assets/Scripts/PlayerController.cs`](Lab9/Assets/Scripts/PlayerController.cs): keyboard movement and turning
+* [`Lab9/Assets/Scripts/Spinner.cs`](Lab9/Assets/Scripts/Spinner.cs): continuous rotation, pause and recolor on click
+* [`Lab9/Assets/Scripts/ClickInteractor.cs`](Lab9/Assets/Scripts/ClickInteractor.cs): mouse picking with a raycast
+* [`Lab9/Assets/Scripts/CameraFollow.cs`](Lab9/Assets/Scripts/CameraFollow.cs): smooth follow camera
+* [`Lab9/Assets/Scenes/SampleScene.unity`](Lab9/Assets/Scenes/SampleScene.unity): the scene
+
+**Output:**
+
+![Interactive 3D Scene in Unity](Lab9/Output/Scene.png)
+
+---
+
 ### 10. 3D Viewing Pipeline with Projection and Viewport Mapping
 
 **Description:**
@@ -245,6 +272,7 @@ Vertex 0 through the pipeline:
 * PyOpenGL
 * GLFW
 * OpenGL
+* Unity 6 (Universal Render Pipeline) and C# (Lab 9)
 
 
 ## How to Run
@@ -261,3 +289,5 @@ Then navigate to the required lab folder and run:
 cd Lab1
 python main.py
 ```
+
+**Lab 9 (Unity):** in Unity Hub, click **Add → Add project from disk** and select the `Lab9` folder, open it with Unity 6, open `Assets/Scenes/SampleScene`, and press **Play**. Unity regenerates the `Library` folder on the first open.
