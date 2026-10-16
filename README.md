@@ -136,6 +136,35 @@ The default scene has four polygons, including a red band tilted in depth that p
 
 ---
 
+### 7. Phong Illumination Model
+
+**Description:**
+Lab 7 implements the **Phong illumination model** on a 3D sphere, evaluated in software at every pixel:
+
+```
+I = ka·Ia + kd·Il·(N·L) + ks·Il·(R·V)^n
+```
+
+where `N` is the surface normal, `L` the unit vector to the point light, `R = 2(N·L)N − L` the reflection of `L`, and `V` the view vector. The window shows the three terms separately and then their sum: **Ambient | Diffuse | Specular | Phong**. Ambient and diffuse light take the object's color, while the specular highlight takes the light's color (white).
+
+The program reads the coefficients `ka`, `kd`, `ks`, the shininess exponent `n`, the light position, and the object color (press Enter to keep the defaults), then prints a worked example of every vector and term at the brightest point on the sphere. In the window, the arrow keys move the light, `+`/`-` double or halve the shininess, and `R` resets.
+
+**Implementation:**
+
+[`Lab7/main.py`](Lab7/main.py)
+
+**Outputs:**
+
+#### Default (shininess n = 32)
+
+![Phong Illumination](Lab7/Output/Phong.png)
+
+#### Low shininess (n = 4): wider, softer highlight
+
+![Phong Illumination, low shininess](Lab7/Output/Phong_LowShininess.png)
+
+---
+
 ## Technologies Used
 
 * Python
