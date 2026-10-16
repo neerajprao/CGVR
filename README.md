@@ -113,6 +113,29 @@ The clipping window is `x = [-4, 4]`, `y = [-3, 3]`. The program reads the line 
 
 ---
 
+### 6. Z-Buffer Algorithm for Hidden Surface Removal
+
+**Description:**
+Lab 6 implements the **Z-buffer (depth buffer) algorithm** in software. Every pixel stores a color in the frame buffer and a depth in the depth buffer, initialized to the background color and the farthest depth. Each polygon is scan converted, its depth at every pixel is computed from its plane equation `Ax + By + Cz + D = 0` (incrementally, `z' = z - A/C` along a scan line), and the pixel is overwritten only if the new surface is closer to the viewer. Because the test is done per pixel, it correctly handles polygons that pass through each other.
+
+The default scene has four polygons, including a red band tilted in depth that passes through a green band. The left panel draws the polygons in input order without a Z-buffer (the far blue wall wrongly covers everything), and the right panel shows the correct result with the Z-buffer. Press `D` to switch the right panel to a grayscale view of the depth buffer (nearer = brighter). The program prints each polygon's plane equation, depth-test results, and visible pixel count. Custom polygons can be entered instead of the default scene.
+
+**Implementation:**
+
+[`Lab6/main.py`](Lab6/main.py)
+
+**Outputs:**
+
+#### Without vs With Z-Buffer
+
+![Z-Buffer](Lab6/Output/ZBuffer.png)
+
+#### Depth Buffer
+
+![Depth Buffer](Lab6/Output/DepthBuffer.png)
+
+---
+
 ## Technologies Used
 
 * Python
